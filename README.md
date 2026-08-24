@@ -29,3 +29,6 @@ This is a static prototype. Its browser-side login and role controls are present
 - Added clear deployment and security guidance.
 - Added a responsive executive UI layer with clearer hierarchy, stronger navigation, improved KPI cards, polished tables, and accessible focus states.
 - Preserved the existing calculations, embedded data, navigation, and Excel workflow.
+- Added a filter-responsive Commercial Levers page for trade-in, loan, protection and Microsoft performance.
+- Added all-store and like-for-like August revenue comparison using same-date August 2025 values.
+- Updated the approved 69-store production snapshot through 23 August 2026 with explicit data-quality exclusions.
