@@ -20,4 +20,4 @@
 
 Zero denominators return `NA` rather than an artificial zero. Aggregate views should be calculated from summed numerators and denominators, not averages of store percentages.
 
-For the 23 August 2026 snapshot, `Aptronix_PLF_SKC` and `Ecom-TL` are outside the approved 69-store scope. Trade-in transaction `LOGTI/2627/3821` is quarantined because its source quantity is 46,000, and 208 loan quantities assigned to an unmapped `#N/A` branch remain excluded. Store-level YoY displays `Low LY base` when comparable revenue is below ₹1 lakh.
+For the 24 August 2026 snapshot, `Aptronix_PLF_SKC` and `Ecom-TL` are outside the approved 69-store scope. Trade-in transactions `INBTI/2627/6368`, `BEGTI/2627/4543`, `PMCTI/2627/7855`, and `LOGTI/2627/3821` are quarantined because their source quantities are impossible outliers; 243 loan quantities assigned to an unmapped `#N/A` branch remain excluded. Store-level YoY displays `Low LY base` when comparable revenue is below ₹1 lakh.
