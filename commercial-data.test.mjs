@@ -44,7 +44,8 @@ assert.equal(sandbox.globalThis.PROD_COMMERCIAL_META_2454.unmappedLoanQtyExclude
 assert.match(index, /data-page="commercial"/);
 assert.match(index, /id="commercial"/);
 assert.match(index, /commercial-data\.js\?v=20260829-1/);
-assert.match(index, /commercial-levers\.js\?v=20260829-1/);
+assert.match(index, /commercial-levers\.js\?v=20260829-2/);
+assert.match(leverSource, /replace\(\/\^Aptronix\\s\+\/i/);
 assert.match(index, /trade-in source contains no impossible quantities requiring quarantine/);
 assert.doesNotMatch(index, /four impossible trade-in quantities quarantined/);
 for (const id of ["tradeTopRows", "tradeBottomRows", "loanTopRows", "loanBottomRows", "licenseTopRows", "licenseBottomRows"]) {

@@ -54,10 +54,14 @@
     return{rate:pct(Number(row.overallProtectionQty||0),devices),qty:Number(row.overallProtectionQty||0),base:devices};
   }
 
+  function displayStoreName(store){
+    return String(store||'').replace(/^Aptronix\s+/i,'').trim();
+  }
+
   function renderRankList(id,items){
     const list=q(id);if(!list)return;
     if(!items.length){list.innerHTML='<li class="commercialRankEmpty">No eligible store</li>';return;}
-    list.innerHTML=items.map(item=>`<li><span><b>${esc(item.row.store)}</b><small>${Math.round(item.qty).toLocaleString('en-IN')} ÷ ${Math.round(item.base).toLocaleString('en-IN')} units</small></span><strong>${pctText(item.rate)}</strong></li>`).join('');
+    list.innerHTML=items.map(item=>`<li><span><b>${esc(displayStoreName(item.row.store))}</b><small>${Math.round(item.qty).toLocaleString('en-IN')} ÷ ${Math.round(item.base).toLocaleString('en-IN')} units</small></span><strong>${pctText(item.rate)}</strong></li>`).join('');
   }
 
   function renderRankings(rows){
