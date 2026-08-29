@@ -8,6 +8,7 @@
   const money=value=>'₹'+((value||0)/10000000).toLocaleString('en-IN',{maximumFractionDigits:2,minimumFractionDigits:2})+' Cr';
   const signedMoney=value=>(value>=0?'+':'−')+money(Math.abs(value));
   const signedPct=value=>value==null?'No LY base':(value>=0?'+':'')+value.toFixed(1)+'%';
+  const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 
   function scopeStores(){
     if(typeof window.scopeRowsV23==='function')return window.scopeRowsV23().map(row=>norm(row.store));
@@ -46,6 +47,28 @@
     if(q(qtyId))q(qtyId).textContent=qtyText(qty);
   }
 
+  function rankValue(row,metric){
+    const devices=['iphone','mac','ipad','watch','airpods'].reduce((total,key)=>total+Number(row.actual[key]||0),0);
+    if(metric==='trade')return{rate:pct(Number(row.iphoneTradeQty||0),Number(row.actual.iphone||0)),qty:Number(row.iphoneTradeQty||0),base:Number(row.actual.iphone||0)};
+    if(metric==='loan')return{rate:pct(Number(row.overallLoanQty||0),devices),qty:Number(row.overallLoanQty||0),base:devices};
+    return{rate:pct(Number(row.overallProtectionQty||0),devices),qty:Number(row.overallProtectionQty||0),base:devices};
+  }
+
+  function renderRankList(id,items){
+    const list=q(id);if(!list)return;
+    if(!items.length){list.innerHTML='<li class="commercialRankEmpty">No eligible store</li>';return;}
+    list.innerHTML=items.map(item=>`<li><span><b>${esc(item.row.store)}</b><small>${Math.round(item.qty).toLocaleString('en-IN')} ÷ ${Math.round(item.base).toLocaleString('en-IN')} units</small></span><strong>${pctText(item.rate)}</strong></li>`).join('');
+  }
+
+  function renderRankings(rows){
+    ['trade','loan','license'].forEach(metric=>{
+      const eligible=rows.map(row=>({row,...rankValue(row,metric)})).filter(item=>item.rate!=null);
+      const high=eligible.slice().sort((a,b)=>b.rate-a.rate||b.qty-a.qty||a.row.store.localeCompare(b.row.store)).slice(0,5);
+      const low=eligible.slice().sort((a,b)=>a.rate-b.rate||b.base-a.base||a.row.store.localeCompare(b.row.store)).slice(0,5);
+      renderRankList(metric+'TopRows',high);renderRankList(metric+'BottomRows',low);
+    });
+  }
+
   function renderYoy(rows){
     const eligible=rows.filter(row=>row.sameDateEligible);
     const comparisonRows=yoyMode==='lfl'?eligible:rows;
@@ -53,7 +76,7 @@
     const delta=a.revenue-a.lyRevenueSameDate;
     const growth=a.lyRevenueSameDate>0?delta/a.lyRevenueSameDate*100:null;
     if(q('yoyGrowth'))q('yoyGrowth').textContent=signedPct(growth);
-    if(q('yoyGrowthSub'))q('yoyGrowthSub').textContent=growth==null?'Selected scope has no same-date August 2025 base':`${signedMoney(delta)} vs 1–26 Aug 2025`;
+    if(q('yoyGrowthSub'))q('yoyGrowthSub').textContent=growth==null?'Selected scope has no supplied August 2025 base':`${signedMoney(delta)} vs source-supplied 1–23 Aug 2025`;
     if(q('yoyCurrent'))q('yoyCurrent').textContent=money(a.revenue);
     if(q('yoyLastYear'))q('yoyLastYear').textContent=money(a.lyRevenueSameDate);
     if(q('yoyFullMonth'))q('yoyFullMonth').textContent=money(a.lyRevenueFullMonth);
@@ -85,7 +108,7 @@
     setMetric('overallProtectionAttach','overallProtectionQty',pct(a.overallProtectionQty,a.devices),a.overallProtectionQty);
     if(q('microsoftActualQty'))q('microsoftActualQty').textContent=Math.round(a.microsoftQty).toLocaleString('en-IN');
     if(q('commercialScope'))q('commercialScope').textContent=`${rows.length} store${rows.length===1?'':'s'} · weighted attachment rates`;
-    renderYoy(rows);renderTable(rows);
+    renderYoy(rows);renderRankings(rows);renderTable(rows);
   };
 
   const priorRefresh=window.refreshV23;

@@ -4,6 +4,7 @@ import vm from "node:vm";
 
 const dailySource = fs.readFileSync(new URL("./daily-data.js", import.meta.url), "utf8");
 const commercialSource = fs.readFileSync(new URL("./commercial-data.js", import.meta.url), "utf8");
+const leverSource = fs.readFileSync(new URL("./commercial-levers.js", import.meta.url), "utf8");
 const index = fs.readFileSync(new URL("./index.html", import.meta.url), "utf8");
 const sandbox = { globalThis: {} };
 vm.runInNewContext(dailySource, sandbox);
@@ -19,17 +20,17 @@ const deviceUnits = ["iphone", "mac", "ipad", "watch", "airpods"].reduce((sum, k
 assert.equal(rows.length, 69);
 assert.deepEqual(Object.keys(commercial).sort(), Object.keys(actuals).sort());
 assert.ok(!Object.values(commercial).some(row => ["Aptronix_PLF_SKC", "Ecom-TL"].includes(row.store)));
-assert.ok(rows.every(row => row.date === "2026-08-26"));
-assert.equal(total("iphoneTradeQty"), 2248);
-assert.equal(total("macTradeQty"), 92);
-assert.equal(total("iphoneLoanQty"), 2916);
-assert.equal(total("overallLoanQty"), 3439);
-assert.equal(total("iphoneProtectionQty"), 4515);
-assert.equal(total("overallProtectionQty"), 7562);
-assert.equal(total("microsoftQty"), 389);
-assert.ok(Math.abs(total("lyRevenueSameDate") - 941525836.39) < 0.001);
+assert.ok(rows.every(row => row.date === "2026-08-28"));
+assert.equal(total("iphoneTradeQty"), 2323);
+assert.equal(total("macTradeQty"), 103);
+assert.equal(total("iphoneLoanQty"), 3089);
+assert.equal(total("overallLoanQty"), 3641);
+assert.equal(total("iphoneProtectionQty"), 4667);
+assert.equal(total("overallProtectionQty"), 7861);
+assert.equal(total("microsoftQty"), 411);
+assert.ok(Math.abs(total("lyRevenueSameDate") - 1020957970.21) < 0.001);
 assert.ok(Math.abs(total("lyRevenueFullMonth") - 1049293986.04) < 0.001);
-assert.ok(Math.abs(actualTotal("revenue") - 1847718254.31) < 0.001);
+assert.ok(Math.abs(actualTotal("revenue") - 1930850519.73) < 0.001);
 assert.ok(total("iphoneTradeQty") / actualTotal("iphone") < 1);
 assert.ok(total("overallLoanQty") / deviceUnits < 1);
 assert.ok(total("overallProtectionQty") / deviceUnits < 1);
@@ -42,9 +43,37 @@ assert.deepEqual(
 assert.equal(sandbox.globalThis.PROD_COMMERCIAL_META_2454.unmappedLoanQtyExcluded, 243);
 assert.match(index, /data-page="commercial"/);
 assert.match(index, /id="commercial"/);
-assert.match(index, /commercial-data\.js\?v=20260827-1/);
-assert.match(index, /commercial-levers\.js\?v=20260827-1/);
-assert.match(index, /corrected trade-in source contains no impossible quantities requiring quarantine/);
+assert.match(index, /commercial-data\.js\?v=20260829-1/);
+assert.match(index, /commercial-levers\.js\?v=20260829-1/);
+assert.match(index, /trade-in source contains no impossible quantities requiring quarantine/);
 assert.doesNotMatch(index, /four impossible trade-in quantities quarantined/);
+for (const id of ["tradeTopRows", "tradeBottomRows", "loanTopRows", "loanBottomRows", "licenseTopRows", "licenseBottomRows"]) {
+  assert.match(index, new RegExp(`id="${id}"`));
+}
+assert.match(index, /Top 5 &amp; Bottom 5 Commercial Attach/);
+assert.match(index, /Available-period YoY Growth/);
+assert.match(index, /source-supplied 1–23 Aug 2025/);
+assert.match(leverSource, /function renderRankings\(rows\)/);
+assert.match(leverSource, /renderYoy\(rows\);renderRankings\(rows\);renderTable\(rows\)/);
 
-console.log("Commercial levers validated: 69 stores, clean attachment rates, and same-date YoY coverage");
+const ranked = metric => rows.map(row => {
+  const key = Object.keys(commercial).find(key => commercial[key] === row);
+  const actual = actuals[key];
+  const devices = ["iphone", "mac", "ipad", "watch", "airpods"].reduce((sum, field) => sum + Number(actual[field] || 0), 0);
+  const [qty, base] = metric === "trade"
+    ? [Number(row.iphoneTradeQty || 0), Number(actual.iphone || 0)]
+    : metric === "loan"
+      ? [Number(row.overallLoanQty || 0), devices]
+      : [Number(row.overallProtectionQty || 0), devices];
+  return { store: row.store, qty, base, rate: base > 0 ? qty / base * 100 : null };
+}).filter(row => row.rate != null);
+const top = metric => ranked(metric).sort((a, b) => b.rate - a.rate || b.qty - a.qty || a.store.localeCompare(b.store)).slice(0, 5).map(row => row.store);
+const bottom = metric => ranked(metric).sort((a, b) => a.rate - b.rate || b.base - a.base || a.store.localeCompare(b.store)).slice(0, 5).map(row => row.store);
+assert.deepEqual(top("trade"), ["Aptronix Inorbit Mall", "Aptronix Gachibowli", "Aptronix Borivali", "Aptronix Promenade", "Aptronix Ambience VK"]);
+assert.deepEqual(bottom("trade"), ["Aptronix Khammam", "Aptronix MBD", "Aptronix Kamla Nagar", "Aptronix Nikol", "Aptronix Vizianagaram"]);
+assert.deepEqual(top("loan"), ["Aptronix Siddipet", "Aptronix Khammam", "Aptronix Bhimavaram", "Aptronix Hanamkonda", "Aptronix karimnagar"]);
+assert.deepEqual(bottom("loan"), ["Aptronix GVK One", "Aptronix Ambience GGN", "Aptronix Promenade", "Aptronix Jubilee Hills", "Aptronix Bodakdev"]);
+assert.deepEqual(top("license"), ["Aptronix VR CHENNAI", "Aptronix Sunview", "Aptronix KNK Chennai", "Aptronix Ambattur", "Aptronix Kamla Nagar"]);
+assert.deepEqual(bottom("license"), ["Aptronix Naroda", "Aptronix Bodakdev", "Aptronix Maninagar", "Aptronix Vijay Cross Road", "Aptronix Bopal"]);
+
+console.log("Commercial levers validated: 69 stores, clean attachment rates, rankings, and labelled prior-period coverage");
