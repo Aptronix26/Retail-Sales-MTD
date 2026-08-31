@@ -2736,7 +2736,7 @@ const EMBEDDED_W1_ACHIEVEMENT={"aspenvizag":{"store":"Aptronix Aspen Vizag","dat
     const latestDate=latestActual?new Date(latestActual.date+'T00:00:00'):null;
     const elapsedDays=latestDate&&!isNaN(latestDate)?latestDate.getDate():1;
     const totalDays=latestDate&&!isNaN(latestDate)?new Date(latestDate.getFullYear(),latestDate.getMonth()+1,0).getDate():31;
-    const exitPct=latestActual?Math.round((latestActual.value/Math.max(1,elapsedDays)*totalDays)*10)/10:null;
+    const exitPct=latestActual&&target.revenue?Math.round((latestActual.agg.revenue/target.revenue*100/Math.max(1,elapsedDays)*totalDays)*10)/10:null;
 
     const W=900,H=310,L=65,R=70,T=30,B=55;
     const EXIT_X=W-R;

@@ -63,6 +63,7 @@ test("weekly revenue achievement is complete, monotonic, and correctly calculate
 test("exit projection and run rates use the latest snapshot date", () => {
   const w4Achievement = sum(snapshots[3], "revenue") / revenueTarget * 100;
   assert.equal(round1(w4Achievement / 30 * 31), 97.2);
+  assert.match(html, /latestActual\.agg\.revenue\/target\.revenue\*100/);
   assert.match(html, /const elapsedDays=latestDate&&!isNaN\(latestDate\)\?latestDate\.getDate\(\):1/);
   assert.match(html, /const totalDays=latestDate&&!isNaN\(latestDate\)\?new Date/);
   assert.doesNotMatch(html, /const elapsedDays=20/);
