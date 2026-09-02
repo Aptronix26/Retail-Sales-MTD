@@ -37,7 +37,7 @@ const snapshots = [
   extractObject("window.PROD_ACH_2454="),
 ];
 const targets = extractObject("window.PROD_TARGETS_2454=");
-const dates = ["2026-08-07", "2026-08-13", "2026-08-21", "2026-08-30"];
+const dates = ["2026-08-07", "2026-08-13", "2026-08-21", "2026-08-31"];
 const sum = (dataset, field) => Object.values(dataset).reduce((total, row) => total + Number(row[field] || 0), 0);
 const revenueTarget = sum(targets, "revenue");
 const round1 = value => Math.round(value * 10) / 10;
@@ -54,7 +54,7 @@ test("all four permanent weekly snapshots cover the same 69 stores", () => {
 test("weekly revenue achievement is complete, monotonic, and correctly calculated", () => {
   const revenues = snapshots.map(snapshot => sum(snapshot, "revenue"));
   const achievement = revenues.map(value => round1(value / revenueTarget * 100));
-  assert.deepEqual(achievement, [19.4, 41.5, 65.7, 94]);
+  assert.deepEqual(achievement, [19.4, 41.5, 65.7, 95.8]);
   for (let index = 1; index < revenues.length; index += 1) {
     assert.ok(revenues[index] > revenues[index - 1], `W${index + 1} must exceed W${index}`);
   }
@@ -62,7 +62,7 @@ test("weekly revenue achievement is complete, monotonic, and correctly calculate
 
 test("exit projection and run rates use the latest snapshot date", () => {
   const w4Achievement = sum(snapshots[3], "revenue") / revenueTarget * 100;
-  assert.equal(round1(w4Achievement / 30 * 31), 97.2);
+  assert.equal(round1(w4Achievement / 31 * 31), 95.8);
   assert.match(html, /latestActual\.agg\.revenue\/target\.revenue\*100/);
   assert.match(html, /const elapsedDays=latestDate&&!isNaN\(latestDate\)\?latestDate\.getDate\(\):1/);
   assert.match(html, /const totalDays=latestDate&&!isNaN\(latestDate\)\?new Date/);
