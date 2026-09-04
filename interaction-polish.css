@@ -1,0 +1,97 @@
+:root{
+  --ui-accent:#3478f6;
+  --ui-accent-rgb:52,120,246;
+  --ui-ease:cubic-bezier(.2,.8,.2,1)
+}
+
+/* Advanced interaction layer: visual only; dashboard values and calculations are untouched. */
+.ui-scroll-progress{
+  position:fixed;inset:0 0 auto 0;height:3px;z-index:1200;pointer-events:none;
+  background:linear-gradient(90deg,#60a5fa,#2563eb 55%,#7c3aed);
+  transform:scaleX(0);transform-origin:left center;box-shadow:0 1px 8px rgba(var(--ui-accent-rgb),.35)
+}
+
+.card,.briefKpi,.briefPanel,.focusPanel,.commercialRankingCard,.priorityCard,
+.healthMetric,.weekCard,.outcomeCard,.timeAction,.actionStep,.briefAction{
+  transition:transform .24s var(--ui-ease),box-shadow .24s var(--ui-ease),
+    border-color .24s ease,background-color .24s ease
+}
+
+@media (hover:hover) and (pointer:fine){
+  .card:hover,.briefKpi:hover,.briefPanel:hover,.commercialRankingCard:hover,
+  .priorityCard:hover,.healthMetric:hover,.weekCard:hover,.outcomeCard:hover,.timeAction:hover{
+    transform:translateY(-4px);border-color:rgba(var(--ui-accent-rgb),.28);
+    box-shadow:0 18px 42px rgba(15,23,42,.11),0 0 0 1px rgba(var(--ui-accent-rgb),.04)
+  }
+  .executiveKpi:hover .metric,.briefKpi:hover b,.commercialKpi:hover .metric{
+    color:#174ea6;transform:translateY(-1px)
+  }
+  .navitem:hover{padding-left:17px}
+  button:hover{filter:saturate(1.08)}
+}
+
+.executiveKpi,.briefKpi,.commercialKpi{position:relative;overflow:visible;isolation:isolate}
+.executiveKpi:after,.briefKpi:after,.commercialKpi:after{
+  content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;
+  opacity:0;transition:opacity .25s ease;
+  background:radial-gradient(260px circle at var(--pointer-x,50%) var(--pointer-y,30%),rgba(var(--ui-accent-rgb),.12),transparent 64%)
+}
+.executiveKpi:hover:after,.briefKpi:hover:after,.commercialKpi:hover:after,
+.executiveKpi:focus-visible:after,.briefKpi:focus-visible:after,.commercialKpi:focus-visible:after{opacity:1}
+.executiveKpi .metric,.briefKpi b,.commercialKpi .metric{transition:color .2s ease,transform .2s var(--ui-ease)}
+
+.ui-interactive-card:focus-visible{outline:3px solid rgba(var(--ui-accent-rgb),.22);outline-offset:3px}
+.ui-hover-tip{
+  position:absolute;left:16px;right:16px;bottom:calc(100% + 10px);z-index:50;
+  padding:9px 11px;border-radius:10px;background:#071a31;color:#eef5ff;
+  font-size:11px;font-weight:650;line-height:1.4;letter-spacing:0;
+  box-shadow:0 14px 34px rgba(2,8,23,.24);opacity:0;visibility:hidden;
+  transform:translateY(6px);transition:opacity .16s ease,transform .16s var(--ui-ease),visibility .16s;
+  pointer-events:none
+}
+.ui-hover-tip:after{content:"";position:absolute;top:100%;left:24px;border:6px solid transparent;border-top-color:#071a31}
+.ui-interactive-card:hover .ui-hover-tip,.ui-interactive-card:focus-visible .ui-hover-tip{
+  opacity:1;visibility:visible;transform:translateY(0)
+}
+
+.focusPanel,.briefHero{--pointer-x:75%;--pointer-y:20%;position:relative;isolation:isolate}
+.focusPanel:before,.briefHero:before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
+  background:radial-gradient(420px circle at var(--pointer-x) var(--pointer-y),rgba(111,168,255,.18),transparent 62%);
+  opacity:.8;transition:opacity .2s ease
+}
+
+table td{transition:background-color .15s ease,color .15s ease}
+table tr.ui-row-hover td{background:#f1f6ff!important}
+table td.ui-column-hover{background:#e8f1ff!important;color:#102a56}
+table tr.ui-row-hover td.ui-column-hover{background:#dceaff!important}
+
+.appPage.active{animation:uiPageIn .28s var(--ui-ease)}
+@keyframes uiPageIn{from{opacity:.45;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+.ui-back-top{
+  position:fixed;right:22px;bottom:22px;z-index:700;width:44px;height:44px;min-height:44px;
+  display:grid;place-items:center;border-radius:14px;background:#0d2c53;color:#fff;border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 12px 28px rgba(15,23,42,.2);opacity:0;visibility:hidden;transform:translateY(10px) scale(.94);
+  transition:opacity .2s ease,visibility .2s,transform .2s var(--ui-ease);font-size:18px;padding:0
+}
+.ui-back-top.is-visible{opacity:1;visibility:visible;transform:none}
+.ui-back-top:hover{background:#174a86;transform:translateY(-2px)}
+
+@media(max-width:1100px){
+  .sidebar{scroll-snap-type:x proximity}.sidebar .navitem{scroll-snap-align:start}
+  .ui-back-top{right:14px;bottom:14px}
+}
+@media(max-width:760px){
+  .topbar{gap:12px}.title h1{font-size:23px}.title p{font-size:11px}
+  .executiveKpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .executiveKpi:last-child{grid-column:1/-1}
+  .ui-hover-tip{display:none}
+}
+@media(max-width:480px){.executiveKpis{grid-template-columns:1fr!important}.executiveKpi:last-child{grid-column:auto}}
+@media(prefers-reduced-motion:reduce){
+  .appPage.active{animation:none}.card,.briefKpi,.briefPanel,.focusPanel,.commercialRankingCard,
+  .priorityCard,.healthMetric,.weekCard,.outcomeCard,.timeAction,.actionStep,.briefAction{transition:none!important}
+  .card:hover,.briefKpi:hover,.briefPanel:hover,.commercialRankingCard:hover{transform:none!important}
+}
+
