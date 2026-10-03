@@ -9,4 +9,6 @@ assert.ok(config.reporting && typeof config.reporting.label === "string");
 if (Number.isFinite(config.reporting.totalPeriods)) {
   assert.equal(config.reporting.elapsedPeriods + config.reporting.remainingPeriods, config.reporting.totalPeriods);
 }
+assert.equal(config.benchmarks.loanAttachPct, 25);
+assert.equal(config.benchmarks.tradeInPct, 20);
 console.log(`Reporting configuration validated: ${config.reporting.label}`);

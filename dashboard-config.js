@@ -15,6 +15,6 @@ globalThis.DASHBOARD_CONFIG = Object.freeze({
     published: "3 Oct 2026",
     expectedStores: 69
   }),
-  benchmarks: Object.freeze({ loanAttachPct: 25, tradeInPct: 10 }),
+  benchmarks: Object.freeze({ loanAttachPct: 25, tradeInPct: 20 }),
   dataClassification: "Internal business reporting"
 });
