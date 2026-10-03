@@ -80,7 +80,7 @@
     const delta=a.revenue-a.lyRevenueSameDate;
     const growth=a.lyRevenueSameDate>0?delta/a.lyRevenueSameDate*100:null;
     if(q('yoyGrowth'))q('yoyGrowth').textContent=signedPct(growth);
-    if(q('yoyGrowthSub'))q('yoyGrowthSub').textContent=growth==null?'Selected scope has no supplied August 2025 base':`${signedMoney(delta)} vs source-supplied 1–23 Aug 2025`;
+    if(q('yoyGrowthSub'))q('yoyGrowthSub').textContent=growth==null?'Selected scope has no same-date October 2025 base':`${signedMoney(delta)} vs 1–2 Oct 2025`;
     if(q('yoyCurrent'))q('yoyCurrent').textContent=money(a.revenue);
     if(q('yoyLastYear'))q('yoyLastYear').textContent=money(a.lyRevenueSameDate);
     if(q('yoyFullMonth'))q('yoyFullMonth').textContent=money(a.lyRevenueFullMonth);
@@ -121,3 +121,4 @@
   if(typeof priorNavigate==='function')window.navigateToPage=function(page){const result=priorNavigate.apply(this,arguments);if(page==='commercial')renderCommercialLevers();return result;};
   document.addEventListener('DOMContentLoaded',()=>setTimeout(renderCommercialLevers,350));
 })();
+
