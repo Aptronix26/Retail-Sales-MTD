@@ -32,7 +32,7 @@ function extractObject(marker) {
 
 const snapshots = [extractObject("window.PROD_ACH_2454=")];
 const targets = extractObject("window.PROD_TARGETS_2454=");
-const dates = ["2026-10-02"];
+const dates = ["2026-10-04"];
 const sum = (dataset, field) => Object.values(dataset).reduce((total, row) => total + Number(row[field] || 0), 0);
 const revenueTarget = sum(targets, "revenue");
 const round1 = value => Math.round(value * 10) / 10;
@@ -49,12 +49,12 @@ test("October starts with one current weekly snapshot covering the same 69 store
 test("current weekly revenue achievement is correctly calculated", () => {
   const revenues = snapshots.map(snapshot => sum(snapshot, "revenue"));
   const achievement = revenues.map(value => round1(value / revenueTarget * 100));
-  assert.deepEqual(achievement, [4.2]);
+  assert.deepEqual(achievement, [8.7]);
 });
 
 test("exit projection and run rates use the latest snapshot date", () => {
   const achievement = sum(snapshots[0], "revenue") / revenueTarget * 100;
-  assert.equal(round1(achievement / 2 * 31), 64.9);
+  assert.equal(round1(achievement / 4 * 31), 67.5);
   assert.match(html, /latestActual\.agg\.revenue\/target\.revenue\*100/);
   assert.match(html, /const elapsedDays=latestDate&&!isNaN\(latestDate\)\?latestDate\.getDate\(\):1/);
   assert.match(html, /const totalDays=latestDate&&!isNaN\(latestDate\)\?new Date/);

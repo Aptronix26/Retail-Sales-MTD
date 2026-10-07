@@ -31,4 +31,4 @@ This is a static prototype. Its browser-side login and role controls are present
 - Preserved the existing calculations, embedded data, navigation, and Excel workflow.
 - Added a filter-responsive Commercial Levers page for trade-in, loan, protection and Microsoft performance.
 - Added all-store and like-for-like October revenue comparison using same-date October 2025 values.
-- Updated the approved 69-store production snapshot through 2 October 2026 with October targets and same-date October 2025 comparison.
+- Updated the approved 69-store production snapshot through 4 October 2026 with October targets and same-date October 2025 comparison.

@@ -2,17 +2,17 @@ globalThis.DASHBOARD_CONFIG = Object.freeze({
   id: "daily-mtd",
   title: "Retail Operations OS — Daily Morning / MTD",
   reporting: Object.freeze({
-    label: "Achievement through 2 Oct 2026",
-    asOf: "2026-10-02",
-    elapsedPeriods: 2,
+    label: "Achievement through 4 Oct 2026",
+    asOf: "2026-10-04",
+    elapsedPeriods: 4,
     totalPeriods: 31,
-    remainingPeriods: 29,
+    remainingPeriods: 27,
     periodUnit: "day"
   }),
   governance: Object.freeze({
     source: "October target + validated Daily MTD achievement workbook",
-    dataThrough: "2 Oct 2026",
-    published: "3 Oct 2026",
+    dataThrough: "4 Oct 2026",
+    published: "5 Oct 2026",
     expectedStores: 69
   }),
   benchmarks: Object.freeze({ loanAttachPct: 25, tradeInPct: 20 }),
