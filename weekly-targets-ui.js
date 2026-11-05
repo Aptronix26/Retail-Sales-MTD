@@ -53,7 +53,13 @@
     render();
   }
   function pairCell(target,actual,hasActual){
-    return `<div class="weeklyTargetPair"><b>T ${display(target)}</b><span>${hasActual?`A ${display(actual)} · ${pct(actual,number(target))}`:'Achievement pending'}</span></div>`;
+    return `<div class="weeklyTargetPair">
+      <div class="weeklyTargetValues">
+        <span><small>Target</small><b>${display(target)}</b></span>
+        <span><small>Achieved</small><b>${hasActual?display(actual):'—'}</b></span>
+      </div>
+      <span class="weeklyTargetRate ${hasActual?'':'pending'}">${hasActual?pct(actual,number(target)):'Pending'}</span>
+    </div>`;
   }
   function render(){
     const rows=selectedRows();
@@ -108,8 +114,8 @@
       </div>
       <div class="weeklyTargetKpis" id="weeklyTargetKpis"></div>
       <div class="weeklyTargetMeta" id="weeklyTargetMeta"></div>
-      <div class="weeklyTargetTableWrap"><table class="weeklyTargetTable"><thead><tr><th>ARM</th><th>Store</th><th>Staff</th>${LOBS.map(lob=>`<th>${esc(lob)} T / A</th>`).join('')}<th>Overall T / A</th></tr></thead><tbody id="weeklyTargetRows"></tbody></table></div>
-      <div class="weeklyTargetFoot">Achievement uses net invoice quantity for POS and Sale Return transactions in the five core LOB categories. Cancelled, held, non-core and non-target-store rows are excluded. ${SALES?`${SALES.sourceRowCount.toLocaleString('en-IN')} source rows were processed; ${(SALES.unmappedExecutives||[]).length} sales identities have core sales but no staff-target row, so their units remain visible in mapping coverage and are not assigned to another person.`:'Achievement source is not loaded.'} Aptronix Kochi remains under Vishal Nadar for staff targets pending confirmation of the conflicting store-summary assignment.</div>`;
+      <div class="weeklyTargetTableWrap"><table class="weeklyTargetTable"><thead><tr><th>ARM</th><th>Store</th><th>Staff</th>${LOBS.map(lob=>`<th class="metricHead"><span>${esc(lob)}</span><small>Target · Achieved</small></th>`).join('')}<th class="metricHead overallHead"><span>Overall</span><small>Target · Achieved</small></th></tr></thead><tbody id="weeklyTargetRows"></tbody></table></div>
+      <div class="weeklyTargetFoot">Achievement uses net invoice quantity for POS and Sale Return transactions in the five core LOB categories. Cancelled, held, non-core and non-target-store rows are excluded. ${SALES?`${SALES.sourceRowCount.toLocaleString('en-IN')} source rows were processed; ${(SALES.unmappedExecutives||[]).length} sales identities have core sales but no staff-target row, so their units remain visible in mapping coverage and are not assigned to another person.`:'Achievement source is not loaded.'} Kochi is assigned to Poornesh as confirmed by management.</div>`;
     const heading=page.querySelector('h2');
     const intro=heading?.nextElementSibling;
     (intro||heading)?.insertAdjacentElement('afterend',workspace);
