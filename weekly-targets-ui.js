@@ -9,7 +9,11 @@
   const pct=(actual,target)=>target>0?`${Math.round(actual/target*100)}%`:'—';
   const key=(arm,store,staff)=>`${arm}\u241f${store}\u241f${staff}`;
   const identityKey=(value)=>String(value||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-  const currentUser=()=>typeof CURRENT_USER!=='undefined'?CURRENT_USER:null;
+  const currentUser=()=>{
+    const loginScreen=document.getElementById('loginScreen');
+    if(loginScreen&&loginScreen.style.display!=='none')return null;
+    return typeof CURRENT_USER!=='undefined'?CURRENT_USER:null;
+  };
   const achievementMap=new Map((SALES?.rows||[]).map(row=>[key(row.arm,row.store,row.staff),row]));
   const asOf=SALES?.asOfDate?new Date(`${SALES.asOfDate}T00:00:00`):null;
   const dateLabel=(iso)=>iso?new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'—';
