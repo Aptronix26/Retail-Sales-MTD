@@ -85,7 +85,7 @@ test('weekly workspace renders current-week target and achievement values',()=>{
   const intro=new Element('inputIntro');
   heading.nextElementSibling=intro;
   elements.set('input',page);elements.set('inputHeading',heading);elements.set('inputIntro',intro);
-  const uiContext={window:{WEEKLY_STAFF_TARGETS:data,WEEKLY_STAFF_ACHIEVEMENTS:sales},document:{
+  const uiContext={window:{WEEKLY_STAFF_TARGETS:data,WEEKLY_STAFF_ACHIEVEMENTS:sales},CURRENT_USER:{role:'Admin / HO',user:'Admin / HO',employeeName:'Test Admin',jobTitle:'Growth & Retail Excellence Head'},STORE_MAP:[],document:{
     readyState:'complete',getElementById:(id)=>elements.get(id)||null,createElement:()=>new Element()
   },console,Intl,Date,Map,Set,Object,Number,String,Math};
   vm.createContext(uiContext);
@@ -94,4 +94,27 @@ test('weekly workspace renders current-week target and achievement values',()=>{
   assert.match(elements.get('weeklyTargetKpis').innerHTML,/Through 4 Nov/);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Target</);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Achieved</);
+
+  uiContext.CURRENT_USER={role:'RM',user:'Kunal',employeeName:'Kunal',jobTitle:'Regional Manager'};
+  uiContext.window.WEEKLY_TARGET_SCOPE_API.applyAccess();
+  assert.match(elements.get('weeklyTargetMeta').innerHTML,/15 ARMs/);
+
+  const scopedArm=data.arms[0];
+  uiContext.CURRENT_USER={role:'ARM',user:scopedArm.arm,employeeName:scopedArm.arm,jobTitle:'Area Manager'};
+  uiContext.window.WEEKLY_TARGET_SCOPE_API.applyAccess();
+  assert.match(elements.get('weeklyTargetMeta').innerHTML,/1 ARM/);
+  assert.equal(elements.get('weeklyTargetArm').disabled,true);
+
+  const scopedStore=scopedArm.stores[0];
+  uiContext.CURRENT_USER={role:'Store Manager',user:scopedStore.store,employeeName:'Test Manager',jobTitle:'Store Manager'};
+  uiContext.window.WEEKLY_TARGET_SCOPE_API.applyAccess();
+  assert.match(elements.get('weeklyTargetMeta').innerHTML,/1 store/);
+  assert.equal(elements.get('weeklyTargetStore').disabled,true);
+
+  const scopedStaff=scopedStore.staff[0];
+  uiContext.CURRENT_USER={role:'Staff',user:scopedStore.store,employeeName:scopedStaff.name,employeeFirstName:scopedStaff.name,jobTitle:'Sales Executive'};
+  uiContext.window.WEEKLY_TARGET_SCOPE_API.applyAccess();
+  assert.match(elements.get('weeklyTargetMeta').innerHTML,/1 staff row/);
+  assert.equal(elements.get('weeklyTargetStaff').value,scopedStaff.name);
+  assert.equal(elements.get('weeklyTargetStaff').disabled,true);
 });
