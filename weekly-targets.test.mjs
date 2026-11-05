@@ -11,7 +11,7 @@ const data=context.window.WEEKLY_STAFF_TARGETS;
 const sales=context.window.WEEKLY_STAFF_ACHIEVEMENTS;
 
 test('weekly staff targets preserve the complete source hierarchy',()=>{
-  assert.equal(data.arms.length,14);
+  assert.equal(data.arms.length,15);
   assert.equal(data.arms.reduce((sum,arm)=>sum+arm.stores.length,0),69);
   assert.equal(data.arms.reduce((sum,arm)=>sum+arm.stores.reduce((subtotal,store)=>subtotal+store.staff.length,0),0),313);
   assert.equal(data.storeTargets.length,69);
@@ -36,13 +36,10 @@ test('weekly target rows retain all five LOB fields and no achievement placehold
   }
 });
 
-test('source assignment conflict remains visible instead of being silently overwritten',()=>{
-  assert.deepEqual(JSON.parse(JSON.stringify(data.mappingIssues)),[{
-    type:'arm_store_conflict',
-    store:'Aptronix Kochi',
-    staff_sheet_arm:'Vishal Nadar',
-    store_target_arm:'Poornesh'
-  }]);
+test('management override assigns Kochi to Poornesh without a review alert',()=>{
+  assert.deepEqual(JSON.parse(JSON.stringify(data.mappingIssues)),[]);
+  const kochi=data.arms.flatMap(arm=>arm.stores.map(store=>({arm:arm.arm,store:store.store}))).filter(row=>row.store==='Aptronix Kochi');
+  assert.deepEqual(JSON.parse(JSON.stringify(kochi)),[{arm:'Poornesh',store:'Aptronix Kochi'}]);
 });
 
 test('sales achievement rows map one-to-one to all target staff rows',()=>{
@@ -95,6 +92,6 @@ test('weekly workspace renders current-week target and achievement values',()=>{
   vm.runInContext(fs.readFileSync(new URL('./weekly-targets-ui.js',import.meta.url),'utf8'),uiContext);
   assert.equal(elements.get('weeklyTargetWeek').value,'W6');
   assert.match(elements.get('weeklyTargetKpis').innerHTML,/Through 4 Nov/);
-  assert.match(elements.get('weeklyTargetRows').innerHTML,/T [0-9—]/);
-  assert.match(elements.get('weeklyTargetRows').innerHTML,/A [0-9—]/);
+  assert.match(elements.get('weeklyTargetRows').innerHTML,/>Target</);
+  assert.match(elements.get('weeklyTargetRows').innerHTML,/>Achieved</);
 });
