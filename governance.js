@@ -11,6 +11,7 @@
     "weekly-trajectory": "Weekly Trajectory Intelligence"
   };
   const displayTitle = dashboardTitles[dashboardId] || config.title || "Intelligence Dashboard";
+  const showCrossRepositoryNavigation = false;
   const links = [
     { id: "daily-mtd", label: "Daily MTD", href: "https://aptronix26.github.io/Retail-Sales-MTD/" },
     { id: "weekly-comparison", label: "Weekly", href: "https://aptronix26.github.io/Boardroom-JAS-Weekly/" },
@@ -180,9 +181,9 @@
           ${checks.map(item => `<div class="governance-check governance-check--${item.state}"><span></span><div><b>${item.name}</b><small>${item.detail}</small></div></div>`).join("")}
         </div>
       </details>
-      <nav class="governance-switcher" aria-label="Intelligence dashboards">
+      ${showCrossRepositoryNavigation ? `<nav class="governance-switcher" aria-label="Intelligence dashboards">
         ${links.map(link => `<a href="${link.href}"${link.id === dashboardId ? ' aria-current="page"' : ""}>${link.label}</a>`).join("")}
-      </nav>
+      </nav>` : ""}
     </div>`;
 
   const topbar = document.querySelector("main.main > .topbar");
@@ -198,3 +199,4 @@
     });
   });
 })();
+
