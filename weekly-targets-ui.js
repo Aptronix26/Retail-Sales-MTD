@@ -8,6 +8,8 @@
   const display=(value)=>value===null||value===undefined||value===''?'—':Number(value).toLocaleString('en-IN');
   const pct=(actual,target)=>target>0?`${Math.round(actual/target*100)}%`:'—';
   const key=(arm,store,staff)=>`${arm}\u241f${store}\u241f${staff}`;
+  const identityKey=(value)=>String(value||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const currentUser=()=>typeof CURRENT_USER!=='undefined'?CURRENT_USER:null;
   const achievementMap=new Map((SALES?.rows||[]).map(row=>[key(row.arm,row.store,row.staff),row]));
   const asOf=SALES?.asOfDate?new Date(`${SALES.asOfDate}T00:00:00`):null;
   const dateLabel=(iso)=>iso?new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'—';
@@ -26,32 +28,72 @@
   }))));
   const ROWS=flatten();
 
+  function accessScope(){
+    const user=currentUser();
+    if(!user)return {rows:[],role:'Signed out',mode:'none'};
+    const role=user.role||'';
+    if(['RM','Admin / HO','HO','CEO','Business Head'].includes(role))return {rows:ROWS,role,mode:'enterprise'};
+    if(role==='ARM')return {rows:ROWS.filter(row=>row.arm===user.user),role,mode:'arm'};
+    if(role==='Store Manager'||role==='Staff'){
+      const storeRows=ROWS.filter(row=>row.store===user.user);
+      const isManager=role==='Store Manager'&&/manager|\basm\b|head/i.test(user.jobTitle||'');
+      if(isManager)return {rows:storeRows,role,mode:'store'};
+      const names=[user.employeeName,user.employeeFirstName].map(identityKey).filter(Boolean);
+      const selfRows=storeRows.filter(row=>names.includes(identityKey(row.staff)));
+      return {rows:selfRows,role,mode:'self'};
+    }
+    return {rows:[],role,mode:'none'};
+  }
+  function canSelectAll(filter){
+    const mode=accessScope().mode;
+    if(filter==='arm')return mode==='enterprise';
+    if(filter==='store')return ['enterprise','arm'].includes(mode);
+    if(filter==='staff')return mode!=='self';
+    return false;
+  }
+
   function option(value,label){return `<option value="${esc(value)}">${esc(label??value)}</option>`;}
   function selectedRows(){
     const arm=document.getElementById('weeklyTargetArm')?.value||'All';
     const store=document.getElementById('weeklyTargetStore')?.value||'All';
     const staff=document.getElementById('weeklyTargetStaff')?.value||'All';
-    return ROWS.filter(row=>(arm==='All'||row.arm===arm)&&(store==='All'||row.store===store)&&(staff==='All'||row.staff===staff));
+    return accessScope().rows.filter(row=>(arm==='All'||row.arm===arm)&&(store==='All'||row.store===store)&&(staff==='All'||row.staff===staff));
   }
   function populateStores(){
     const arm=document.getElementById('weeklyTargetArm').value;
-    const stores=[...new Set(ROWS.filter(row=>arm==='All'||row.arm===arm).map(row=>row.store))].sort();
+    const stores=[...new Set(accessScope().rows.filter(row=>arm==='All'||row.arm===arm).map(row=>row.store))].sort();
     const select=document.getElementById('weeklyTargetStore');
     const prior=select.value;
-    select.innerHTML=option('All','All stores')+stores.map(store=>option(store,store.replace(/^Aptronix\s+/i,''))).join('');
-    select.value=stores.includes(prior)?prior:'All';
+    const allowAll=canSelectAll('store');
+    select.innerHTML=(allowAll?option('All','All stores'):'')+stores.map(store=>option(store,store.replace(/^Aptronix\s+/i,''))).join('');
+    select.value=stores.includes(prior)?prior:(allowAll?'All':stores[0]||'');
+    select.disabled=!allowAll&&stores.length<=1;
     populateStaff();
   }
   function populateStaff(){
     const arm=document.getElementById('weeklyTargetArm').value;
     const store=document.getElementById('weeklyTargetStore').value;
-    const staff=[...new Set(ROWS.filter(row=>(arm==='All'||row.arm===arm)&&(store==='All'||row.store===store)).map(row=>row.staff))].sort((a,b)=>a.localeCompare(b));
+    const staff=[...new Set(accessScope().rows.filter(row=>(arm==='All'||row.arm===arm)&&(store==='All'||row.store===store)).map(row=>row.staff))].sort((a,b)=>a.localeCompare(b));
     const select=document.getElementById('weeklyTargetStaff');
     const prior=select.value;
-    select.innerHTML=option('All','All staff')+staff.map(name=>option(name)).join('');
-    select.value=staff.includes(prior)?prior:'All';
+    const allowAll=canSelectAll('staff');
+    select.innerHTML=(allowAll?option('All','All staff'):'')+staff.map(name=>option(name)).join('');
+    select.value=staff.includes(prior)?prior:(allowAll?'All':staff[0]||'');
+    select.disabled=!allowAll&&staff.length<=1;
     render();
   }
+  function applyAccess(){
+    const scope=accessScope();
+    const armSelect=document.getElementById('weeklyTargetArm');
+    if(!armSelect)return;
+    const arms=[...new Set(scope.rows.map(row=>row.arm))].sort((a,b)=>a.localeCompare(b));
+    const allowAll=canSelectAll('arm');
+    armSelect.innerHTML=(allowAll?option('All','All ARMs'):'')+arms.map(arm=>option(arm)).join('');
+    armSelect.value=allowAll?'All':arms[0]||'';
+    armSelect.disabled=!allowAll&&arms.length<=1;
+    populateStores();
+  }
+  window.WEEKLY_TARGET_SCOPE_API={applyAccess,accessScope};
   function pairCell(target,actual,hasActual){
     return `<div class="weeklyTargetPair">
       <div class="weeklyTargetValues">
@@ -120,15 +162,26 @@
     const intro=heading?.nextElementSibling;
     (intro||heading)?.insertAdjacentElement('afterend',workspace);
     const armSelect=document.getElementById('weeklyTargetArm');
-    armSelect.innerHTML=option('All','All ARMs')+DATA.arms.map(item=>item.arm).sort().map(arm=>option(arm)).join('');
-    document.getElementById('weeklyTargetStore').innerHTML=option('All','All stores');
-    document.getElementById('weeklyTargetStaff').innerHTML=option('All','All staff');
+    document.getElementById('weeklyTargetStore').innerHTML='';
+    document.getElementById('weeklyTargetStaff').innerHTML='';
     document.getElementById('weeklyTargetWeek').value=currentWeek;
     armSelect.addEventListener('change',populateStores);
     document.getElementById('weeklyTargetStore').addEventListener('change',populateStaff);
     document.getElementById('weeklyTargetStaff').addEventListener('change',render);
     document.getElementById('weeklyTargetWeek').addEventListener('change',render);
-    populateStores();
+    applyAccess();
+    const login=window.retailLogin2454;
+    if(typeof login==='function'&&!login.weeklyScopeWrapped){
+      const scopedLogin=function(){const ok=login.apply(this,arguments);if(ok)setTimeout(applyAccess,0);return ok;};
+      scopedLogin.weeklyScopeWrapped=true;
+      window.retailLogin2454=scopedLogin;
+    }
+    const logout=window.logoutApp;
+    if(typeof logout==='function'&&!logout.weeklyScopeWrapped){
+      const scopedLogout=function(){const result=logout.apply(this,arguments);setTimeout(applyAccess,0);return result;};
+      scopedLogout.weeklyScopeWrapped=true;
+      window.logoutApp=scopedLogout;
+    }
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build);else build();
 })();
