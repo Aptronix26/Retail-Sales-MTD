@@ -51,9 +51,9 @@ test('sales achievement rows map one-to-one to all target staff rows',()=>{
 });
 
 test('sales dump follows the Sunday-to-Saturday quarter calendar',()=>{
-  assert.equal(sales.asOfDate,'2026-11-06');
+  assert.equal(sales.asOfDate,'2026-11-07');
   assert.deepEqual(JSON.parse(JSON.stringify(sales.weekRanges.W1)),{start:'2026-09-27',end:'2026-10-03',isComplete:true});
-  assert.deepEqual(JSON.parse(JSON.stringify(sales.weekRanges.W6)),{start:'2026-11-01',end:'2026-11-07',isComplete:false});
+  assert.deepEqual(JSON.parse(JSON.stringify(sales.weekRanges.W6)),{start:'2026-11-01',end:'2026-11-07',isComplete:true});
 });
 
 test('mapped and unmapped core units reconcile to source core units for every week',()=>{
@@ -91,7 +91,7 @@ test('weekly workspace renders current-week target and achievement values',()=>{
   vm.createContext(uiContext);
   vm.runInContext(fs.readFileSync(new URL('./weekly-targets-ui.js',import.meta.url),'utf8'),uiContext);
   assert.equal(elements.get('weeklyTargetWeek').value,'W6');
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/Through 6 Nov/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/1 Nov–7 Nov/);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Target</);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Achieved</);
 
