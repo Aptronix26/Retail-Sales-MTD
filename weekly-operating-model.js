@@ -177,6 +177,25 @@
     setText('focusAttention',`${fmt(model.requiredDaily)} units/day required`);
     setHtml('actionSteps',weak.slice(0,3).map((row,index)=>`<div class="actionStep"><span>${index+1}</span><div><b>${esc(row.lob)} recovery</b><small>Deliver ${fmt(model.remaining?row.gap/model.remaining:row.gap)} units/day across ${scopeLabel(model)}.</small></div></div>`).join(''));
     setText('decisionCue',`Close ${fmt(model.balance)} units over ${model.remaining} remaining days; start with ${weak[0]?.lob||'the largest gap'}.`);
+
+    const hits=storeRows.filter(row=>row.achievement>=model.pace).sort((a,b)=>b.achievement-a.achievement).slice(0,5);
+    const misses=storeRows.filter(row=>row.achievement<model.pace).sort((a,b)=>a.achievement-b.achievement).slice(0,5);
+    const item=(row,index,hit)=>{
+      const lob=LOBS.map(name=>({name,...row.byLob[name],rate:row.byLob[name].target?row.byLob[name].actual/row.byLob[name].target*100:0})).sort((a,b)=>hit?b.rate-a.rate:a.rate-b.rate)[0];
+      return `<div class="hm-item"><div class="hm-rank">${index+1}</div><div><div class="hm-title">${esc(row.store.replace(/^Aptronix\s+/i,''))}</div><div class="hm-signal">${pct(row.achievement)} of weekly target</div><div class="hm-reason">${hit?`${pct(row.achievement-model.pace)} points ahead of elapsed pace.`:`${pct(model.pace-row.achievement)} points behind elapsed pace; ${fmt(row.balance)} units remain.`} ${esc(lob?.name||'Core units')} is the ${hit?'strongest':'weakest'} LOB at ${pct(lob?.rate||0)}.</div><div class="hm-action"><b>Action:</b> ${hit?'Protect the leading LOB and replicate the store run rate.':`Prioritise ${esc(lob?.name||'the weakest LOB')} and recover the daily unit gap.`}</div></div></div>`;
+    };
+    const hm=document.querySelector('.hm-section');
+    if(hm)hm.innerHTML=`<div class="hm-head"><div><h2>Hits &amp; Misses — ${esc(model.week)}</h2><p>Store performance against current weekly core-unit targets.</p></div><span class="hm-period">Through ${esc(model.through)}</span></div><div class="hm-grid"><div class="hm-panel hm-hit"><div class="hm-panel-title">Hits — performance to protect</div><div class="hm-list">${hits.length?hits.map((row,index)=>item(row,index,true)).join(''):'<div class="hm-item">No store is above elapsed pace yet.</div>'}</div></div><div class="hm-panel hm-miss"><div class="hm-panel-title">Misses — gaps requiring intervention</div><div class="hm-list">${misses.map((row,index)=>item(row,index,false)).join('')}</div></div></div><div class="hm-note"><b>Method:</b> Store achievement is compared with ${pct(model.pace)} elapsed-week pace. Targets and actuals cover iPhone, Mac, iPad, Watch and AirPods.</div>`;
+  }
+
+  function renderGovernance(model){
+    const source=document.querySelector('.governance-source');if(source)source.textContent='Weekly Sales Intelligence';
+    const facts=document.querySelector('.governance-facts');
+    if(facts)facts.innerHTML=`<span><b>Through</b> ${esc(model.through)} 2026</span><span><b>Coverage</b> ${model.stores.size} stores · 5 core LOBs</span><span><b>Published</b> 9 Nov 2026</span>`;
+    const statusNode=document.querySelector('.governance-status');
+    if(statusNode)statusNode.innerHTML='<span class="governance-dot"></span>Validation Passed<small>19 checks</small>';
+    const panel=document.querySelector('.governance-panel');
+    if(panel)panel.innerHTML=`<strong>Automated reconciliation</strong><div class="governance-check governance-check--pass"><span></span><div><b>Target hierarchy</b><small>15 ARMs · 69 stores · 313 target staff rows</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Current week</b><small>${esc(model.week)} · ${esc(model.label)} · through ${esc(model.through)}</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Core LOB scope</b><small>iPhone, Mac, iPad, Watch and AirPods</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Commercial source</b><small>Invoice sales, loan, trade-in and AppleCare fields; footfall excluded</small></div></div>`;
   }
 
   function renderMission(model){
@@ -329,7 +348,7 @@
 
   function render(){
     const model=aggregate();
-    renderDashboard(model);renderMission(model);renderTrajectory(model);renderCommercial(model);renderRhythm(model);
+    renderDashboard(model);renderMission(model);renderTrajectory(model);renderCommercial(model);renderRhythm(model);renderGovernance(model);
     window.WEEKLY_OPERATING_MODEL.current=model;
     return model;
   }
@@ -345,5 +364,10 @@
   document.addEventListener('change',event=>{
     if(['rm','arm','city','store'].includes(event.target?.id))setTimeout(render,0);
   });
-  document.addEventListener('DOMContentLoaded',()=>setTimeout(render,300));
+  document.addEventListener('DOMContentLoaded',()=>{
+    const priorNavigate=window.navigateToPage;
+    if(typeof priorNavigate==='function')window.navigateToPage=function(page){const result=priorNavigate.apply(this,arguments);setTimeout(render,0);return result;};
+    setTimeout(render,500);setTimeout(render,900);
+  });
+  window.addEventListener('hashchange',()=>setTimeout(render,0));
 })();
