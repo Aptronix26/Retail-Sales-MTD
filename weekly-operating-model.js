@@ -129,6 +129,7 @@
     setLabel('#mission .card.section:nth-of-type(5) h2','Week-End Forecast');
     setLabel('#trajectory h2','📈 Weekly Target vs Achievement Trajectory');
     setLabel('#trajectory > .mini','Completed and current Sunday–Saturday weeks. Each point is actual core units as a percentage of that week’s target.');
+    setLabel('#trajectory > .mini:last-child','Targets come from the weekly target master. Actuals come from the appended sales invoice source and use the latest available day in the current week.');
     setLabel('#gpt .card:first-child .mini','Select a business question to receive a role-scoped answer from current weekly targets and core-unit sales.');
     setLabel('#rhythm > .card > .mini','A structured daily cadence for the current weekly core-unit mission.');
     setLabel('#rhythm .rhythmSummaryCard:nth-child(2) span','Required Units / Day');
@@ -152,6 +153,8 @@
     setText('execExitStatus','Projected weekly units');
 
     setText('briefTitle',`${health.label}: ${pct(model.achievement)} achieved vs ${pct(model.pace)} elapsed pace`);
+    setLabel('#briefExitCard span','Week-End Outlook');
+    setLabel('.briefKpisDecision .briefKpi:nth-child(2) span','Weekly Unit Gap');
     setText('briefExit',pct(model.projectedPct));
     setText('briefExitSub',`${fmt(model.projected)} projected units`);
     setText('briefGap',fmt(model.balance));
@@ -173,6 +176,7 @@
     setText('focusRisk',health.label);
     setHtml('focusPriorities',weak.slice(0,3).map((row,index)=>`<div class="focusPriority"><span>Priority ${index+1}</span><b>${esc(row.lob)} · ${pct(row.achievement)}</b><small>${fmt(row.gap)} units remaining</small></div>`).join(''));
     setText('focusStore',storeRows[0]?.store.replace(/^Aptronix\s+/i,'')||'—');
+    setLabel('.focusFooter > div:nth-child(1) span','Largest Weekly Unit-Gap Store');
     setText('focusConcentration',storeRows.length?`${pct(sum(storeRows.slice(0,5).map(row=>row.balance))/Math.max(1,model.balance)*100)} in top 5 gaps`:'—');
     setText('focusAttention',`${fmt(model.requiredDaily)} units/day required`);
     setHtml('actionSteps',weak.slice(0,3).map((row,index)=>`<div class="actionStep"><span>${index+1}</span><div><b>${esc(row.lob)} recovery</b><small>Deliver ${fmt(model.remaining?row.gap/model.remaining:row.gap)} units/day across ${scopeLabel(model)}.</small></div></div>`).join(''));
@@ -338,6 +342,20 @@
     setHtml('copilotAnswer',`<div class="copilotBlock what"><h3>What</h3><p>${esc(scopeLabel(model))} has achieved <b>${fmt(model.actual)} of ${fmt(model.target)} core units (${pct(model.achievement)})</b> through ${esc(model.through)}. Elapsed-week pace is ${pct(model.pace)}.</p></div><div class="copilotBlock why"><h3>Why</h3><p>The largest LOB gap is <b>${esc(weak[0]?.lob||'—')} (${fmt(weak[0]?.gap||0)} units)</b>. The largest store gap is <b>${esc(stores[0]?.store.replace(/^Aptronix\s+/i,'')||'—')} (${fmt(stores[0]?.balance||0)} units)</b>.</p></div><div class="copilotBlock how"><h3>How to Recover — Suggested Action</h3><p>Deliver <b>${fmt(model.requiredDaily)} core units per remaining day</b>. Prioritise ${esc(weak.slice(0,2).map(row=>row.lob).join(' and '))}, then review stores below ${pct(model.pace)} pace at midday.</p></div><div class="copilotImpact"><span>Expected Business Impact</span><b>Closing the daily requirement projects 100% of the weekly target.</b></div>`);
   }
 
+  function populateCopilot(){
+    const category=q('copilotCategory');const question=q('copilotQuestion');
+    if(category){
+      const selected=category.value;
+      category.innerHTML='<option value="weekly">Weekly Performance</option><option value="stores">Store Gaps</option><option value="lob">LOB Recovery</option><option value="commercial">Commercial Levers</option>';
+      if(Array.from(category.options).some(option=>option.value===selected))category.value=selected;
+    }
+    if(question){
+      const selected=question.value;
+      question.innerHTML='<option value="overall">How is my weekly business performing?</option><option value="behind">Why am I behind weekly target?</option><option value="forecast">Can I still achieve the weekly target?</option><option value="priorities">What are my top three priorities?</option><option value="risk">What is the single biggest risk today?</option>';
+      if(Array.from(question.options).some(option=>option.value===selected))question.value=selected;
+    }
+  }
+
   function renderRhythm(model){
     setText('rhythmRevenueMission',fmt(model.requiredDaily));
     setText('rhythmExitPct',pct(model.projectedPct));
@@ -348,7 +366,7 @@
 
   function render(){
     const model=aggregate();
-    renderDashboard(model);renderMission(model);renderTrajectory(model);renderCommercial(model);renderRhythm(model);renderGovernance(model);
+    renderDashboard(model);renderMission(model);renderTrajectory(model);renderCommercial(model);renderRhythm(model);renderGovernance(model);populateCopilot();
     window.WEEKLY_OPERATING_MODEL.current=model;
     return model;
   }
@@ -359,12 +377,14 @@
   window.refreshV23=function(){try{originalRefresh?.apply(this,arguments);}catch(error){console.warn(error);}return render();};
   window.renderTrajectory=function(){return renderTrajectory(aggregate());};
   window.askRetailCopilotV239=function(){return renderCopilot(aggregate());};
+  window.populateCopilotQuestionDropdownV239=populateCopilot;
   window.WEEKLY_OPERATING_MODEL={aggregate,render,renderCopilot,current:null};
 
   document.addEventListener('change',event=>{
     if(['rm','arm','city','store'].includes(event.target?.id))setTimeout(render,0);
   });
   document.addEventListener('DOMContentLoaded',()=>{
+    window.renderBusinessBriefV244=function(){return renderDashboard(aggregate());};
     const priorNavigate=window.navigateToPage;
     if(typeof priorNavigate==='function')window.navigateToPage=function(page){const result=priorNavigate.apply(this,arguments);setTimeout(render,0);return result;};
     setTimeout(render,500);setTimeout(render,900);
