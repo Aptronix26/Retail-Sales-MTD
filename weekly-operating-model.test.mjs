@@ -19,7 +19,7 @@ test('current weekly target and staff-attributed achievement reconcile',()=>{
   }
   for(const row of sales.rows)for(const lob of lobs)actual+=Number(row.achievements.W7[lob]||0);
   assert.equal(target,5021);
-  assert.equal(actual,608);
+  assert.equal(actual,1252);
 });
 
 test('weekly commercial source covers all stores and uses invoice fields',()=>{
@@ -27,11 +27,11 @@ test('weekly commercial source covers all stores and uses invoice fields',()=>{
   assert.equal(rows.length,69);
   assert.equal(new Set(rows.map(row=>row.store)).size,69);
   const total=field=>rows.reduce((sum,row)=>sum+Number(row[field]||0),0);
-  assert.equal(total('coreUnits'),624);
-  assert.equal(total('tradeInUnits'),50);
-  assert.equal(total('financeUnits'),220);
-  assert.equal(total('licenseUnits'),289);
-  assert.equal(Math.round(total('netRevenue')),81122004);
+  assert.equal(total('coreUnits'),1279);
+  assert.equal(total('tradeInUnits'),91);
+  assert.equal(total('financeUnits'),431);
+  assert.equal(total('licenseUnits'),639);
+  assert.equal(Math.round(total('netRevenue')),167546549);
   assert.ok(rows.every(row=>Number(row.tradeInUnits)<=Number(row.coreUnits)));
   assert.ok(rows.every(row=>Number(row.financeUnits)<=Number(row.coreUnits)));
   assert.ok(rows.every(row=>Number(row.licenseUnits)>=0));
