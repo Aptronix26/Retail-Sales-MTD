@@ -93,6 +93,7 @@ test('weekly UI labels loan and trade-in attach and excludes footfall calculatio
   assert.match(productUi,/Needs improvement/);
   assert.match(productUi,/Relative mix benchmark, not a sales target/);
   assert.doesNotMatch(productUi,/productContributionRows/);
+  assert.doesNotMatch(productUi,/rows\.slice\(0,10\)/);
   const html=fs.readFileSync(new URL('./index.html',import.meta.url),'utf8');
   assert.match(html,/data-page="product"/);
 });
