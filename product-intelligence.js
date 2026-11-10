@@ -58,6 +58,7 @@
     const subBase=RAW.filter(row=>allowed.has(row.store)&&(period==='QTD'||row.week===period)&&selected(row.lob,lob));
     if(changed==='lob'||changed==='week')document.getElementById('productSubLob').value='All';
     setOptions('productSubLob',subBase.map(row=>row.subLob),'All sub-LOBs');
+    if(['build','login'].includes(changed)&&subBase.some(row=>row.subLob==='IPHONE 17'))document.getElementById('productSubLob').value='IPHONE 17';
 
     const rm=setOptions('productRm',maps.map(row=>row.rm),'All RMs');
     const armBase=maps.filter(row=>selected(row.rm,rm));
@@ -153,6 +154,15 @@
     }).join('')}</tr>`).join('')}</tbody></table>`;
   }
 
+  function organisationMixBenchmark(){
+    const lob=value('productLob');const subLob=value('productSubLob');const period=value('productWeek');
+    if(lob==='All'||subLob==='All')return null;
+    const organisationRows=RAW.filter(row=>(period==='QTD'||row.week===period)&&row.lob===lob);
+    const denominator=sum(organisationRows,'units');
+    const numerator=sum(organisationRows.filter(row=>row.subLob===subLob),'units');
+    return {lob,subLob,numerator,denominator,mix:denominator?numerator/denominator*100:0};
+  }
+
   function render(){
     const root=document.getElementById('productIntelligenceRoot');if(!root)return;
     const rows=filteredRows();activeRows=rows;
@@ -178,11 +188,19 @@
 
     renderContributionMatrix();
 
-    const storeRows=group(rows,row=>row.store).map(grouped=>{
-      const first=rows.find(row=>row.store===grouped.key)||{};
-      return {...grouped,rm:first.rm||'—',arm:first.arm||'—',location:first.location||'—'};
-    });
-    document.getElementById('productStoreRows').innerHTML=storeRows.length?storeRows.map(row=>`<tr><td><b>${esc(cleanStore(row.key))}</b></td><td>${esc(row.location)}</td><td>${esc(row.arm)}</td><td>${fmt(row.units)}</td><td>${money(row.revenue)}</td><td>${row.units?money(row.revenue/row.units):'—'}</td><td>${row.revenue?pct(row.grossProfit/row.revenue*100):'—'}</td></tr>`).join(''):`<tr><td colspan="7" class="productEmpty">No sales match this selection.</td></tr>`;
+    const benchmark=organisationMixBenchmark();
+    const baseStoreRows=filteredRows(true);const selectedByStore=new Map(group(rows,row=>row.store).map(row=>[row.key,row]));
+    const storeRows=(benchmark?group(baseStoreRows,row=>row.store):group(rows,row=>row.store)).map(base=>{
+      const selectedRow=selectedByStore.get(base.key);const first=baseStoreRows.find(row=>row.store===base.key)||rows.find(row=>row.store===base.key)||{};
+      const performance=benchmark?(selectedRow||{key:base.key,units:0,revenue:0,grossProfit:0,discount:0,stores:new Set([base.key])}):base;
+      const storeMix=benchmark&&base.units?num(performance.units)/num(base.units)*100:null;
+      const gap=benchmark&&storeMix!==null?storeMix-benchmark.mix:null;
+      return {...performance,rm:first.rm||'—',arm:first.arm||'—',location:first.location||'—',storeMix,gap,status:gap===null?'neutral':gap>=0?'above':'below'};
+    }).sort((a,b)=>benchmark?num(b.storeMix)-num(a.storeMix)||num(b.units)-num(a.units):num(b.units)-num(a.units));
+    const above=storeRows.filter(row=>row.status==='above').length;const below=storeRows.filter(row=>row.status==='below').length;
+    const benchmarkNode=document.getElementById('productBenchmark');
+    benchmarkNode.innerHTML=benchmark?`<div><span>Organisation benchmark</span><b>${esc(productLabel(benchmark.subLob))} is ${pct(benchmark.mix)} of ${esc(benchmark.lob)} units</b><small>${fmt(benchmark.numerator)} ÷ ${fmt(benchmark.denominator)} units · selected period · entire organisation</small></div><div class="productBenchmarkCounts"><div><span>Good performance</span><b class="positive">${fmt(above)} stores</b></div><div><span>Needs improvement</span><b class="negative">${fmt(below)} stores</b></div></div><div class="productBenchmarkLegend"><span class="above">Good: at/above ${pct(benchmark.mix)}</span><span class="below">Needs improvement: below ${pct(benchmark.mix)}</span><small>Relative mix benchmark, not a sales target.</small></div>`:`<div><span>Contribution benchmark</span><b>Select a specific sub-LOB / model</b><small>Each store's unit mix will be compared with the entire organisation for the selected period.</small></div>`;
+    document.getElementById('productStoreRows').innerHTML=storeRows.length?storeRows.map(row=>`<tr class="${benchmark?`productBenchmarkRow ${row.status}`:''}"><td><b>${esc(cleanStore(row.key))}</b></td><td>${esc(row.location)}</td><td>${esc(row.arm)}</td><td>${fmt(row.units)}</td><td>${money(row.revenue)}</td><td>${row.units?money(row.revenue/row.units):'—'}</td><td>${row.revenue?pct(row.grossProfit/row.revenue*100):'—'}</td><td>${benchmark&&row.storeMix!==null?pct(row.storeMix):'—'}</td><td class="${benchmark?row.status:''}">${benchmark&&row.gap!==null?`${row.gap>=0?'+':''}${row.gap.toFixed(1)} pts`:'—'}</td><td>${benchmark?`<span class="productStatus ${row.status}">${row.status==='above'?'Good performance':'Needs improvement'}</span>`:'—'}</td></tr>`).join(''):`<tr><td colspan="10" class="productEmpty">No sales match this selection.</td></tr>`;
 
     const detail=group(rows,row=>`${row.lob}\u241f${row.subLob}\u241f${row.store}`).map(grouped=>{
       const [lob,subLob,store]=grouped.key.split('\u241f');const first=rows.find(row=>row.lob===lob&&row.subLob===subLob&&row.store===store)||{};
@@ -214,7 +232,7 @@
       <div class="productScopeReadout" id="productScopeReadout"></div><div class="productDefinition"><b>Achievement on this page means actual net sales.</b> LOB, ARM, location and store results can be filtered for QTD or a selected week. Sub-LOB/model actuals are available, but sub-LOB target achievement % is not calculated because the target source has no model-level targets.</div><div class="productKpis" id="productKpis"></div>
       <div class="productAnalysisGrid"><div class="card"><h3>Sub-LOB / model mix</h3><div id="productSubLobBars"></div></div><div class="card"><h3>ARM performance</h3><div id="productArmBars"></div></div><div class="card"><h3>Location performance</h3><div id="productLocationBars"></div></div></div>
       <div class="card productTableCard productContributionCard"><div class="productTableHead"><div><h3>ARM contribution by week</h3><p>Compare each ARM's weekly share without scanning a long list. Revenue uses five-LOB revenue; iPhone uses net iPhone units within the selected scope.</p></div><div class="productContributionToggle" role="group" aria-label="Contribution metric"><button class="active" data-contribution-metric="revenue">Revenue %</button><button data-contribution-metric="iphone">iPhone %</button></div></div><div class="productContributionSummary" id="productContributionSummary"></div><div class="productContributionMatrix" id="productContributionMatrix"></div></div>
-      <div class="card productTableCard"><div class="productTableHead"><div><h3>Store performance</h3><p>Exact store-level results for the selected product scope.</p></div></div><div class="productTableWrap"><table><thead><tr><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th><th>GP %</th></tr></thead><tbody id="productStoreRows"></tbody></table></div></div>
+      <div class="card productTableCard"><div class="productTableHead"><div><h3>Store contribution vs organisation</h3><p>For a selected sub-LOB, store unit mix is green when it meets or exceeds the organisation's unit-mix benchmark and red when it is below.</p></div></div><div class="productBenchmark" id="productBenchmark"></div><div class="productTableWrap productStoreBenchmarkTable"><table><thead><tr><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th><th>GP %</th><th>Unit mix</th><th>Vs org</th><th>Status</th></tr></thead><tbody id="productStoreRows"></tbody></table></div></div>
       <div class="card productTableCard"><div class="productTableHead"><div><h3>Detailed product records</h3><p>LOB × sub-LOB × store; up to 200 rows shown. Export retains the full filtered result.</p></div></div><div class="productTableWrap"><table><thead><tr><th>LOB</th><th>Sub-LOB / model</th><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th></tr></thead><tbody id="productDetailRows"></tbody></table></div></div>
       <div class="productMethod">Source: verified POS and Sale Return invoice rows from 27 Sep through ${esc(SALES?.asOfDate||'—')}. Cancelled/held transactions, non-target stores and categories outside iPhone, Mac, iPad, Watch and AirPods are excluded.</div>`;
     document.getElementById('productWeek').addEventListener('change',()=>refreshDimensions('week'));
