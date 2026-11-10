@@ -45,10 +45,11 @@
     const allowed=new Set(maps.map(row=>row.store));
     const weeks=[...new Set(RAW.filter(row=>allowed.has(row.store)).map(row=>row.week))].sort((a,b)=>Number(a.slice(1))-Number(b.slice(1)));
     const weekSelect=document.getElementById('productWeek');
-    if(weekSelect&&!weekSelect.options.length){
+    if(weekSelect){
+      const priorWeek=weekSelect.value;
       const firstStart=SALES.weekRanges?.[weeks[0]]?.start||'2026-09-27';
       weekSelect.innerHTML=option('QTD',`QTD · ${displayDate(firstStart)}–${displayDate(SALES.asOfDate)}`)+weeks.map(week=>option(week,`${weekLabel(week)} · ${displayDate(SALES.weekRanges?.[week]?.start||'')}–${displayDate(SALES.weekRanges?.[week]?.end||'')}`)).join('');
-      weekSelect.value='QTD';
+      weekSelect.value=priorWeek==='QTD'||weeks.includes(priorWeek)?priorWeek:'QTD';
     }
     let lob=setOptions('productLob',LOBS,'All LOBs');
     if(['build','reset'].includes(changed)){document.getElementById('productLob').value='iPhone';lob='iPhone';}
@@ -99,6 +100,37 @@
     return `<div class="productBars">${rows.slice(0,10).map(row=>`<div class="productBarRow"><span title="${esc(productLabel(row.key))}">${esc(productLabel(row.key))}</span><div><i style="width:${Math.max(2,Math.max(0,row.units)/max*100)}%"></i></div><b>${fmt(row.units)} units</b></div>`).join('')}</div>`;
   }
 
+  function contributionRows(){
+    const period=value('productWeek');
+    const rm=value('productRm');
+    const location=value('productLocation');
+    const store=value('productStore');
+    const arm=value('productArm');
+    const base=enrichedRows().filter(row=>(period==='QTD'||row.week===period)&&selected(row.rm,rm)&&selected(row.location,location)&&selected(row.store,store));
+    const totals=new Map();
+    const arms=new Map();
+    for(const row of base){
+      const total=totals.get(row.week)||{revenue:0,iPhoneUnits:0};
+      total.revenue+=num(row.revenue);
+      if(row.lob==='iPhone')total.iPhoneUnits+=num(row.units);
+      totals.set(row.week,total);
+      const key=`${row.week}\u241f${row.arm||'Unmapped ARM'}`;
+      const current=arms.get(key)||{week:row.week,arm:row.arm||'Unmapped ARM',revenue:0,iPhoneUnits:0};
+      current.revenue+=num(row.revenue);
+      if(row.lob==='iPhone')current.iPhoneUnits+=num(row.units);
+      arms.set(key,current);
+    }
+    return [...arms.values()].filter(row=>selected(row.arm,arm)).map(row=>{
+      const total=totals.get(row.week)||{};
+      return {...row,revenueShare:num(total.revenue)?row.revenue/num(total.revenue)*100:0,iPhoneShare:num(total.iPhoneUnits)?row.iPhoneUnits/num(total.iPhoneUnits)*100:0};
+    }).sort((a,b)=>Number(a.week.slice(1))-Number(b.week.slice(1))||b.revenueShare-a.revenueShare||a.arm.localeCompare(b.arm));
+  }
+
+  function contributionCell(value){
+    const width=Math.min(100,Math.max(0,num(value)));
+    return `<div class="productContribution"><b>${pct(value)}</b><span><i style="width:${width}%"></i></span></div>`;
+  }
+
   function render(){
     const root=document.getElementById('productIntelligenceRoot');if(!root)return;
     const rows=filteredRows();activeRows=rows;
@@ -121,6 +153,9 @@
     document.getElementById('productSubLobBars').innerHTML=bars(group(rows,row=>row.subLob),'No sub-LOB sales match this selection.');
     document.getElementById('productArmBars').innerHTML=bars(group(rows,row=>row.arm||'Unmapped ARM'),'No ARM sales match this selection.');
     document.getElementById('productLocationBars').innerHTML=bars(group(rows,row=>row.location||'Unmapped'),'No location sales match this selection.');
+
+    const contribution=contributionRows();
+    document.getElementById('productContributionRows').innerHTML=contribution.length?contribution.map(row=>`<tr><td><b>${esc(weekLabel(row.week))}</b></td><td>${esc(row.arm)}</td><td>${compactMoney(row.revenue)}</td><td>${contributionCell(row.revenueShare)}</td><td>${fmt(row.iPhoneUnits)}</td><td>${contributionCell(row.iPhoneShare)}</td></tr>`).join(''):`<tr><td colspan="6" class="productEmpty">No ARM contribution data matches this selection.</td></tr>`;
 
     const storeRows=group(rows,row=>row.store).map(grouped=>{
       const first=rows.find(row=>row.store===grouped.key)||{};
@@ -157,6 +192,7 @@
       </div>
       <div class="productScopeReadout" id="productScopeReadout"></div><div class="productDefinition"><b>Achievement on this page means actual net sales.</b> LOB, ARM, location and store results can be filtered for QTD or a selected week. Sub-LOB/model actuals are available, but sub-LOB target achievement % is not calculated because the target source has no model-level targets.</div><div class="productKpis" id="productKpis"></div>
       <div class="productAnalysisGrid"><div class="card"><h3>Sub-LOB / model mix</h3><div id="productSubLobBars"></div></div><div class="card"><h3>ARM performance</h3><div id="productArmBars"></div></div><div class="card"><h3>Location performance</h3><div id="productLocationBars"></div></div></div>
+      <div class="card productTableCard"><div class="productTableHead"><div><h3>ARM contribution by week</h3><p>Revenue contribution is each ARM's share of five-LOB revenue. iPhone contribution is each ARM's share of iPhone net units. Both use the same week and selected RM, location and store scope.</p></div></div><div class="productTableWrap productContributionTable"><table><thead><tr><th>Week</th><th>ARM</th><th>Revenue</th><th>Revenue contribution</th><th>iPhone units</th><th>iPhone contribution</th></tr></thead><tbody id="productContributionRows"></tbody></table></div></div>
       <div class="card productTableCard"><div class="productTableHead"><div><h3>Store performance</h3><p>Exact store-level results for the selected product scope.</p></div></div><div class="productTableWrap"><table><thead><tr><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th><th>GP %</th></tr></thead><tbody id="productStoreRows"></tbody></table></div></div>
       <div class="card productTableCard"><div class="productTableHead"><div><h3>Detailed product records</h3><p>LOB × sub-LOB × store; up to 200 rows shown. Export retains the full filtered result.</p></div></div><div class="productTableWrap"><table><thead><tr><th>LOB</th><th>Sub-LOB / model</th><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th></tr></thead><tbody id="productDetailRows"></tbody></table></div></div>
       <div class="productMethod">Source: verified POS and Sale Return invoice rows from 27 Sep through ${esc(SALES?.asOfDate||'—')}. Cancelled/held transactions, non-target stores and categories outside iPhone, Mac, iPad, Watch and AirPods are excluded.</div>`;
