@@ -17,6 +17,7 @@
   const currentUser=()=>typeof CURRENT_USER!=='undefined'?CURRENT_USER:null;
   const roleHasNetwork=role=>['RM','Admin / HO','HO','CEO','Business Head'].includes(role);
   let activeRows=[];
+  let contributionMetric='revenue';
 
   function accessibleStores(){
     const user=currentUser();
@@ -126,9 +127,30 @@
     }).sort((a,b)=>Number(a.week.slice(1))-Number(b.week.slice(1))||b.revenueShare-a.revenueShare||a.arm.localeCompare(b.arm));
   }
 
-  function contributionCell(value){
-    const width=Math.min(100,Math.max(0,num(value)));
-    return `<div class="productContribution"><b>${pct(value)}</b><span><i style="width:${width}%"></i></span></div>`;
+  function renderContributionMatrix(){
+    const rows=contributionRows();
+    const matrix=document.getElementById('productContributionMatrix');
+    const summary=document.getElementById('productContributionSummary');
+    if(!matrix||!summary)return;
+    document.querySelectorAll('[data-contribution-metric]').forEach(button=>button.classList.toggle('active',button.dataset.contributionMetric===contributionMetric));
+    if(!rows.length){matrix.innerHTML='<div class="productEmpty">No ARM contribution data matches this selection.</div>';summary.innerHTML='';return;}
+    const weeks=[...new Set(rows.map(row=>row.week))].sort((a,b)=>Number(a.slice(1))-Number(b.slice(1)));
+    const valueKey=contributionMetric==='revenue'?'revenueShare':'iPhoneShare';
+    const actualKey=contributionMetric==='revenue'?'revenue':'iPhoneUnits';
+    const label=contributionMetric==='revenue'?'Revenue':'iPhone';
+    const byKey=new Map(rows.map(row=>[`${row.arm}\u241f${row.week}`,row]));
+    const latestWeek=weeks[weeks.length-1];
+    const arms=[...new Set(rows.map(row=>row.arm))].sort((a,b)=>num(byKey.get(`${b}\u241f${latestWeek}`)?.[valueKey])-num(byKey.get(`${a}\u241f${latestWeek}`)?.[valueKey])||a.localeCompare(b));
+    const maxShare=Math.max(...rows.map(row=>num(row[valueKey])),1);
+    const leader=byKey.get(`${arms[0]}\u241f${latestWeek}`);
+    const firstForLeader=byKey.get(`${arms[0]}\u241f${weeks[0]}`);
+    const delta=num(leader?.[valueKey])-num(firstForLeader?.[valueKey]);
+    summary.innerHTML=`<div><span>${esc(weekLabel(latestWeek))} leader</span><b>${esc(leader?.arm||'—')}</b></div><div><span>${esc(label)} contribution</span><b>${pct(leader?.[valueKey])}</b></div>${weeks.length>1?`<div><span>Change vs ${esc(weekLabel(weeks[0]))}</span><b class="${delta>=0?'positive':'negative'}">${delta>=0?'+':''}${delta.toFixed(1)} pts</b></div>`:''}`;
+    matrix.innerHTML=`<table><thead><tr><th>ARM</th>${weeks.map(week=>`<th>${esc(weekLabel(week))}</th>`).join('')}</tr></thead><tbody>${arms.map(arm=>`<tr><th>${esc(arm)}</th>${weeks.map(week=>{
+      const row=byKey.get(`${arm}\u241f${week}`);if(!row)return '<td><span class="productNoValue">—</span></td>';
+      const share=num(row[valueKey]);const intensity=.08+.48*(Math.max(0,share)/maxShare);const actual=contributionMetric==='revenue'?compactMoney(row[actualKey]):`${fmt(row[actualKey])} units`;
+      return `<td><div class="productHeatCell" style="background:rgba(47,111,237,${intensity.toFixed(3)})" title="${esc(`${arm} · ${weekLabel(week)} · ${pct(share)} · ${actual}`)}"><b>${pct(share)}</b><small>${esc(actual)}</small></div></td>`;
+    }).join('')}</tr>`).join('')}</tbody></table>`;
   }
 
   function render(){
@@ -154,8 +176,7 @@
     document.getElementById('productArmBars').innerHTML=bars(group(rows,row=>row.arm||'Unmapped ARM'),'No ARM sales match this selection.');
     document.getElementById('productLocationBars').innerHTML=bars(group(rows,row=>row.location||'Unmapped'),'No location sales match this selection.');
 
-    const contribution=contributionRows();
-    document.getElementById('productContributionRows').innerHTML=contribution.length?contribution.map(row=>`<tr><td><b>${esc(weekLabel(row.week))}</b></td><td>${esc(row.arm)}</td><td>${compactMoney(row.revenue)}</td><td>${contributionCell(row.revenueShare)}</td><td>${fmt(row.iPhoneUnits)}</td><td>${contributionCell(row.iPhoneShare)}</td></tr>`).join(''):`<tr><td colspan="6" class="productEmpty">No ARM contribution data matches this selection.</td></tr>`;
+    renderContributionMatrix();
 
     const storeRows=group(rows,row=>row.store).map(grouped=>{
       const first=rows.find(row=>row.store===grouped.key)||{};
@@ -192,7 +213,7 @@
       </div>
       <div class="productScopeReadout" id="productScopeReadout"></div><div class="productDefinition"><b>Achievement on this page means actual net sales.</b> LOB, ARM, location and store results can be filtered for QTD or a selected week. Sub-LOB/model actuals are available, but sub-LOB target achievement % is not calculated because the target source has no model-level targets.</div><div class="productKpis" id="productKpis"></div>
       <div class="productAnalysisGrid"><div class="card"><h3>Sub-LOB / model mix</h3><div id="productSubLobBars"></div></div><div class="card"><h3>ARM performance</h3><div id="productArmBars"></div></div><div class="card"><h3>Location performance</h3><div id="productLocationBars"></div></div></div>
-      <div class="card productTableCard"><div class="productTableHead"><div><h3>ARM contribution by week</h3><p>Revenue contribution is each ARM's share of five-LOB revenue. iPhone contribution is each ARM's share of iPhone net units. Both use the same week and selected RM, location and store scope.</p></div></div><div class="productTableWrap productContributionTable"><table><thead><tr><th>Week</th><th>ARM</th><th>Revenue</th><th>Revenue contribution</th><th>iPhone units</th><th>iPhone contribution</th></tr></thead><tbody id="productContributionRows"></tbody></table></div></div>
+      <div class="card productTableCard productContributionCard"><div class="productTableHead"><div><h3>ARM contribution by week</h3><p>Compare each ARM's weekly share without scanning a long list. Revenue uses five-LOB revenue; iPhone uses net iPhone units within the selected scope.</p></div><div class="productContributionToggle" role="group" aria-label="Contribution metric"><button class="active" data-contribution-metric="revenue">Revenue %</button><button data-contribution-metric="iphone">iPhone %</button></div></div><div class="productContributionSummary" id="productContributionSummary"></div><div class="productContributionMatrix" id="productContributionMatrix"></div></div>
       <div class="card productTableCard"><div class="productTableHead"><div><h3>Store performance</h3><p>Exact store-level results for the selected product scope.</p></div></div><div class="productTableWrap"><table><thead><tr><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th><th>GP %</th></tr></thead><tbody id="productStoreRows"></tbody></table></div></div>
       <div class="card productTableCard"><div class="productTableHead"><div><h3>Detailed product records</h3><p>LOB × sub-LOB × store; up to 200 rows shown. Export retains the full filtered result.</p></div></div><div class="productTableWrap"><table><thead><tr><th>LOB</th><th>Sub-LOB / model</th><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th></tr></thead><tbody id="productDetailRows"></tbody></table></div></div>
       <div class="productMethod">Source: verified POS and Sale Return invoice rows from 27 Sep through ${esc(SALES?.asOfDate||'—')}. Cancelled/held transactions, non-target stores and categories outside iPhone, Mac, iPad, Watch and AirPods are excluded.</div>`;
@@ -205,6 +226,7 @@
     document.getElementById('productStore').addEventListener('change',render);
     document.getElementById('productReset').addEventListener('click',reset);
     document.getElementById('productExport').addEventListener('click',window.downloadProductIntelligence);
+    document.querySelectorAll('[data-contribution-metric]').forEach(button=>button.addEventListener('click',()=>{contributionMetric=button.dataset.contributionMetric;renderContributionMatrix();}));
     refreshDimensions('build');
     const login=window.retailLogin2454;if(typeof login==='function'&&!login.productWrapped){const wrapped=function(){const ok=login.apply(this,arguments);if(ok)setTimeout(()=>refreshDimensions('login'),0);return ok;};wrapped.productWrapped=true;window.retailLogin2454=wrapped;window.employeeLoginApp=wrapped;window.loginApp=wrapped;}
   }
