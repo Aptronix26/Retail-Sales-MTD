@@ -98,7 +98,7 @@
   function bars(rows,emptyText){
     if(!rows.length)return `<div class="productEmpty">${esc(emptyText)}</div>`;
     const max=Math.max(...rows.map(row=>Math.max(0,row.units)),1);
-    return `<div class="productBars">${rows.slice(0,10).map(row=>`<div class="productBarRow"><span title="${esc(productLabel(row.key))}">${esc(productLabel(row.key))}</span><div><i style="width:${Math.max(2,Math.max(0,row.units)/max*100)}%"></i></div><b>${fmt(row.units)} units</b></div>`).join('')}</div>`;
+    return `<div class="productBars">${rows.map(row=>`<div class="productBarRow"><span title="${esc(productLabel(row.key))}">${esc(productLabel(row.key))}</span><div><i style="width:${Math.max(2,Math.max(0,row.units)/max*100)}%"></i></div><b>${fmt(row.units)} units</b></div>`).join('')}</div>`;
   }
 
   function contributionRows(){
