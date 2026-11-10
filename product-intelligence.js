@@ -48,7 +48,8 @@
       weekSelect.innerHTML=option('QTD',`Quarter to date · ${firstStart} to ${SALES.asOfDate}`)+weeks.map(week=>option(week,`${week.replace('W','Week ')} · ${SALES.weekRanges?.[week]?.start||''} to ${SALES.weekRanges?.[week]?.end||''}`)).join('');
       weekSelect.value='QTD';
     }
-    const lob=setOptions('productLob',LOBS,'All LOBs');
+    let lob=setOptions('productLob',LOBS,'All LOBs');
+    if(['build','reset'].includes(changed)){document.getElementById('productLob').value='iPhone';lob='iPhone';}
     const period=value('productWeek');
     const subBase=RAW.filter(row=>allowed.has(row.store)&&(period==='QTD'||row.week===period)&&selected(row.lob,lob));
     if(changed==='lob'||changed==='week')document.getElementById('productSubLob').value='All';
@@ -106,7 +107,7 @@
     const scope=[selectedLob==='All'?'All LOBs':selectedLob,selectedSub==='All'?'All sub-LOBs':productLabel(selectedSub),selectedStore==='All'?'All stores':cleanStore(selectedStore)].join(' · ');
     document.getElementById('productScopeReadout').textContent=`${scope} · ${value('productWeek')==='QTD'?'Quarter to date from 27 Sep':value('productWeek')} · through ${SALES.asOfDate}`;
     document.getElementById('productKpis').innerHTML=`
-      <div><span>Units sold</span><b>${fmt(units)}</b><small>Net invoice quantity</small></div>
+      <div><span>Sales achievement</span><b>${fmt(units)} units</b><small>Net invoice quantity</small></div>
       <div><span>Net revenue</span><b>${compactMoney(revenue)}</b><small>Selected product scope</small></div>
       <div><span>Average selling price</span><b>${units?money(revenue/units):'—'}</b><small>Revenue ÷ units</small></div>
       <div><span>Stores selling</span><b>${fmt(stores)}</b><small>Positive unit sales</small></div>
@@ -150,11 +151,11 @@
         <label>Period<select id="productWeek"></select></label><label>LOB<select id="productLob"></select></label><label>Sub-LOB / model<select id="productSubLob"></select></label>
         <label>RM<select id="productRm"></select></label><label>ARM<select id="productArm"></select></label><label>Location<select id="productLocation"></select></label><label>Store<select id="productStore"></select></label>
       </div>
-      <div class="productScopeReadout" id="productScopeReadout"></div><div class="productKpis" id="productKpis"></div>
+      <div class="productScopeReadout" id="productScopeReadout"></div><div class="productDefinition"><b>Achievement on this page means actual net sales.</b> LOB, ARM, location and store results can be filtered for QTD or a selected week. Sub-LOB/model actuals are available, but sub-LOB target achievement % is not calculated because the target source has no model-level targets.</div><div class="productKpis" id="productKpis"></div>
       <div class="productAnalysisGrid"><div class="card"><h3>Sub-LOB / model mix</h3><div id="productSubLobBars"></div></div><div class="card"><h3>ARM performance</h3><div id="productArmBars"></div></div><div class="card"><h3>Location performance</h3><div id="productLocationBars"></div></div></div>
       <div class="card productTableCard"><div class="productTableHead"><div><h3>Store performance</h3><p>Exact store-level results for the selected product scope.</p></div></div><div class="productTableWrap"><table><thead><tr><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th><th>GP %</th></tr></thead><tbody id="productStoreRows"></tbody></table></div></div>
       <div class="card productTableCard"><div class="productTableHead"><div><h3>Detailed product records</h3><p>LOB × sub-LOB × store; up to 200 rows shown. Export retains the full filtered result.</p></div></div><div class="productTableWrap"><table><thead><tr><th>LOB</th><th>Sub-LOB / model</th><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th></tr></thead><tbody id="productDetailRows"></tbody></table></div></div>
-      <div class="productMethod">Source: verified POS and Sale Return invoice rows through ${esc(SALES?.asOfDate||'—')}. Cancelled/held transactions, non-target stores and categories outside iPhone, Mac, iPad, Watch and AirPods are excluded.</div>`;
+      <div class="productMethod">Source: verified POS and Sale Return invoice rows from 27 Sep through ${esc(SALES?.asOfDate||'—')}. Cancelled/held transactions, non-target stores and categories outside iPhone, Mac, iPad, Watch and AirPods are excluded.</div>`;
     document.getElementById('productWeek').addEventListener('change',()=>refreshDimensions('week'));
     document.getElementById('productLob').addEventListener('change',()=>refreshDimensions('lob'));
     document.getElementById('productSubLob').addEventListener('change',render);
