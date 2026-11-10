@@ -110,21 +110,14 @@
     const store=value('productStore');
     const arm=value('productArm');
     const base=enrichedRows().filter(row=>(period==='QTD'||row.week===period)&&selected(row.lob,lob)&&selected(row.subLob,subLob)&&selected(row.rm,rm)&&selected(row.location,location)&&selected(row.store,store));
-    const totals=new Map();
     const arms=new Map();
     for(const row of base){
-      const total=totals.get(row.week)||{units:0};
-      total.units+=num(row.units);
-      totals.set(row.week,total);
       const key=`${row.week}\u241f${row.arm||'Unmapped ARM'}`;
       const current=arms.get(key)||{week:row.week,arm:row.arm||'Unmapped ARM',units:0};
       current.units+=num(row.units);
       arms.set(key,current);
     }
-    return [...arms.values()].filter(row=>selected(row.arm,arm)).map(row=>{
-      const total=totals.get(row.week)||{};
-      return {...row,unitShare:num(total.units)?row.units/num(total.units)*100:0};
-    }).sort((a,b)=>Number(a.week.slice(1))-Number(b.week.slice(1))||b.unitShare-a.unitShare||a.arm.localeCompare(b.arm));
+    return [...arms.values()].filter(row=>selected(row.arm,arm)).sort((a,b)=>Number(a.week.slice(1))-Number(b.week.slice(1))||b.units-a.units||a.arm.localeCompare(b.arm));
   }
 
   function contributionScopeLabel(){
@@ -142,19 +135,19 @@
     const weeks=[...new Set(rows.map(row=>row.week))].sort((a,b)=>Number(a.slice(1))-Number(b.slice(1)));
     const label=contributionScopeLabel();
     const scope=document.getElementById('productContributionScope');
-    if(scope)scope.textContent=`${label} unit contribution`;
+    if(scope)scope.textContent=`${label} weekly units`;
     const byKey=new Map(rows.map(row=>[`${row.arm}\u241f${row.week}`,row]));
     const latestWeek=weeks[weeks.length-1];
-    const arms=[...new Set(rows.map(row=>row.arm))].sort((a,b)=>num(byKey.get(`${b}\u241f${latestWeek}`)?.unitShare)-num(byKey.get(`${a}\u241f${latestWeek}`)?.unitShare)||a.localeCompare(b));
-    const maxShare=Math.max(...rows.map(row=>num(row.unitShare)),1);
+    const arms=[...new Set(rows.map(row=>row.arm))].sort((a,b)=>num(byKey.get(`${b}\u241f${latestWeek}`)?.units)-num(byKey.get(`${a}\u241f${latestWeek}`)?.units)||a.localeCompare(b));
+    const maxUnits=Math.max(...rows.map(row=>num(row.units)),1);
     const leader=byKey.get(`${arms[0]}\u241f${latestWeek}`);
     const firstForLeader=byKey.get(`${arms[0]}\u241f${weeks[0]}`);
-    const delta=num(leader?.unitShare)-num(firstForLeader?.unitShare);
-    summary.innerHTML=`<div><span>${esc(weekLabel(latestWeek))} leader</span><b>${esc(leader?.arm||'—')}</b></div><div><span>${esc(label)} contribution</span><b>${pct(leader?.unitShare)}</b><small>${fmt(leader?.units)} units</small></div>${weeks.length>1?`<div><span>Change vs ${esc(weekLabel(weeks[0]))}</span><b class="${delta>=0?'positive':'negative'}">${delta>=0?'+':''}${delta.toFixed(1)} pts</b></div>`:''}`;
+    const delta=num(leader?.units)-num(firstForLeader?.units);
+    summary.innerHTML=`<div><span>${esc(weekLabel(latestWeek))} leader</span><b>${esc(leader?.arm||'—')}</b></div><div><span>${esc(label)} units</span><b>${fmt(leader?.units)}</b><small>absolute units sold</small></div>${weeks.length>1?`<div><span>Change vs ${esc(weekLabel(weeks[0]))}</span><b class="${delta>=0?'positive':'negative'}">${delta>=0?'+':''}${fmt(delta)} units</b></div>`:''}`;
     matrix.innerHTML=`<table><thead><tr><th>ARM</th>${weeks.map(week=>`<th>${esc(weekLabel(week))}</th>`).join('')}</tr></thead><tbody>${arms.map(arm=>`<tr><th>${esc(arm)}</th>${weeks.map(week=>{
       const row=byKey.get(`${arm}\u241f${week}`);if(!row)return '<td><span class="productNoValue">—</span></td>';
-      const share=num(row.unitShare);const intensity=.08+.48*(Math.max(0,share)/maxShare);const actual=`${fmt(row.units)} units`;
-      return `<td><div class="productHeatCell" style="background:rgba(47,111,237,${intensity.toFixed(3)})" title="${esc(`${arm} · ${weekLabel(week)} · ${pct(share)} · ${actual}`)}"><b>${pct(share)}</b><small>${esc(actual)}</small></div></td>`;
+      const units=num(row.units);const intensity=.08+.48*(Math.max(0,units)/maxUnits);
+      return `<td><div class="productHeatCell" style="background:rgba(47,111,237,${intensity.toFixed(3)})" title="${esc(`${arm} · ${weekLabel(week)} · ${fmt(units)} units`)}"><b>${fmt(units)}</b><small>units</small></div></td>`;
     }).join('')}</tr>`).join('')}</tbody></table>`;
   }
 
@@ -235,7 +228,7 @@
       </div>
       <div class="productScopeReadout" id="productScopeReadout"></div><div class="productDefinition"><b>Achievement on this page means actual net sales.</b> LOB, ARM, location and store results can be filtered for QTD or a selected week. Sub-LOB/model actuals are available, but sub-LOB target achievement % is not calculated because the target source has no model-level targets.</div><div class="productKpis" id="productKpis"></div>
       <div class="productAnalysisGrid"><div class="card"><h3>Sub-LOB / model mix</h3><div id="productSubLobBars"></div></div><div class="card"><h3>ARM performance</h3><div id="productArmBars"></div></div><div class="card"><h3>Location performance</h3><div id="productLocationBars"></div></div></div>
-      <div class="card productTableCard productContributionCard"><div class="productTableHead"><div><h3>ARM contribution by week</h3><p>The matrix follows the LOB and sub-LOB/model selected above. Each percentage is the ARM's share of that selected product's weekly units.</p></div><div class="productContributionScope" id="productContributionScope"></div></div><div class="productContributionSummary" id="productContributionSummary"></div><div class="productContributionMatrix" id="productContributionMatrix"></div></div>
+      <div class="card productTableCard productContributionCard"><div class="productTableHead"><div><h3>ARM sales by week</h3><p>The matrix follows the LOB and sub-LOB/model selected above. Every value is the absolute number of selected product units sold by that ARM in the week.</p></div><div class="productContributionScope" id="productContributionScope"></div></div><div class="productContributionSummary" id="productContributionSummary"></div><div class="productContributionMatrix" id="productContributionMatrix"></div></div>
       <div class="card productTableCard"><div class="productTableHead"><div><h3>Store contribution vs organisation</h3><p>For a selected sub-LOB, store unit mix is green when it meets or exceeds the organisation's unit-mix benchmark and red when it is below.</p></div></div><div class="productBenchmark" id="productBenchmark"></div><div class="productTableWrap productStoreBenchmarkTable"><table><thead><tr><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th><th>GP %</th><th>Unit mix</th><th>Vs org</th><th>Status</th></tr></thead><tbody id="productStoreRows"></tbody></table></div></div>
       <div class="card productTableCard"><div class="productTableHead"><div><h3>Detailed product records</h3><p>LOB × sub-LOB × store; up to 200 rows shown. Export retains the full filtered result.</p></div></div><div class="productTableWrap"><table><thead><tr><th>LOB</th><th>Sub-LOB / model</th><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th></tr></thead><tbody id="productDetailRows"></tbody></table></div></div>
       <div class="productMethod">Source: verified POS and Sale Return invoice rows from 27 Sep through ${esc(SALES?.asOfDate||'—')}. Cancelled/held transactions, non-target stores and categories outside iPhone, Mac, iPad, Watch and AirPods are excluded.</div>`;
