@@ -32,6 +32,12 @@ test('weekly commercial source covers all stores and uses invoice fields',()=>{
   assert.equal(total('financeUnits'),431);
   assert.equal(total('licenseUnits'),639);
   assert.equal(Math.round(total('netRevenue')),167546549);
+  for(const lob of lobs){
+    const lobUnits=rows.reduce((sum,row)=>sum+Number(row.lobUnits?.[lob]||0),0);
+    assert.equal(lobUnits,Number(sales.sourceCoreByWeek.W7[lob]||0));
+  }
+  assert.equal(rows.reduce((sum,row)=>sum+lobs.reduce((lobSum,lob)=>lobSum+Number(row.lobUnits?.[lob]||0),0),0),total('coreUnits'));
+  assert.equal(rows.reduce((sum,row)=>sum+lobs.reduce((lobSum,lob)=>lobSum+Number(row.licenseByLob?.[lob]||0),0),0),total('licenseUnits'));
   assert.ok(rows.every(row=>Number(row.tradeInUnits)<=Number(row.coreUnits)));
   assert.ok(rows.every(row=>Number(row.financeUnits)<=Number(row.coreUnits)));
   assert.ok(rows.every(row=>Number(row.licenseUnits)>=0));
@@ -39,8 +45,13 @@ test('weekly commercial source covers all stores and uses invoice fields',()=>{
 
 test('weekly UI labels loan and trade-in attach and excludes footfall calculations',()=>{
   const source=fs.readFileSync(new URL('./weekly-operating-model.js',import.meta.url),'utf8');
-  assert.match(source,/Loan Attach/);
-  assert.match(source,/Trade-in Attach/);
-  assert.match(source,/AppleCare \/ License Attach/);
+  assert.match(source,/Loan attach by LOB/i);
+  assert.match(source,/Trade-in attach by LOB/i);
+  assert.match(source,/iPhone AppleCare \/ license attach/i);
+  assert.match(source,/Overall AppleCare \/ license attach/i);
+  assert.match(source,/Weekly Unit Gap by LOB/);
+  assert.match(source,/Week-End Target vs Achievement/);
   assert.doesNotMatch(source,/footfall\s*\//i);
+  const targetUi=fs.readFileSync(new URL('./weekly-targets-ui.js',import.meta.url),'utf8');
+  assert.doesNotMatch(targetUi,/overallHead|targetTotal|actualTotal/);
 });
