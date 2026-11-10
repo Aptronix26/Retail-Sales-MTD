@@ -72,9 +72,12 @@ test('weekly UI labels loan and trade-in attach and excludes footfall calculatio
   assert.match(productUi,/const weekLabel=week/);
   assert.match(productUi,/weeks\.includes\(priorWeek\)/);
   assert.match(productUi,/ARM contribution by week/);
-  assert.match(productUi,/Revenue contribution/);
-  assert.match(productUi,/iPhone contribution/);
+  assert.match(productUi,/Revenue %/);
+  assert.match(productUi,/iPhone %/);
   assert.match(productUi,/row\.lob==='iPhone'/);
+  assert.match(productUi,/productContributionMatrix/);
+  assert.match(productUi,/data-contribution-metric/);
+  assert.doesNotMatch(productUi,/productContributionRows/);
   const html=fs.readFileSync(new URL('./index.html',import.meta.url),'utf8');
   assert.match(html,/data-page="product"/);
 });
