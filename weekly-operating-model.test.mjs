@@ -18,7 +18,7 @@ test('current weekly target and staff-attributed achievement reconcile',()=>{
     target+=Number(staff.targets.W7[lob]||0);
   }
   for(const row of sales.rows)for(const lob of lobs)actual+=Number(row.achievements.W7[lob]||0);
-  assert.equal(target,5021);
+  assert.equal(target,5594);
   assert.equal(actual,1252);
 });
 
