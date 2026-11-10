@@ -98,6 +98,24 @@
     }).sort((a,b)=>a.achievement-b.achievement||b.gap-a.gap);
   }
 
+  const LOB_COLORS={iPhone:'#2563eb',Mac:'#0f766e',iPad:'#7c3aed',Watch:'#d97706',AirPods:'#dc2626'};
+  function lobRows(model){
+    return LOBS.map(lob=>{
+      const row=model.byLob[lob]||{target:0,actual:0};
+      const target=num(row.target);const actual=num(row.actual);
+      const achievement=target?actual/target*100:0;
+      const gap=Math.max(0,target-actual);
+      const requiredDaily=model.remaining?gap/model.remaining:gap;
+      const projected=model.elapsed?actual/model.elapsed*7:actual;
+      const projectedPct=target?projected/target*100:0;
+      return {lob,target,actual,achievement,gap,requiredDaily,projected,projectedPct};
+    });
+  }
+
+  function lobMetricList(rows,detail){
+    return `<div class="lobMetricList">${rows.map(row=>`<div class="lobMetricRow"><span><i style="background:${LOB_COLORS[row.lob]}"></i>${esc(row.lob)}</span>${detail(row)}</div>`).join('')}</div>`;
+  }
+
   function scopeLabel(model){
     if(model.stores.size===1)return Array.from(model.stores)[0].replace(/^Aptronix\s+/i,'');
     return `${model.stores.size} stores`;
@@ -109,209 +127,155 @@
     if(top){
       const h=top.querySelector('h1');const p=top.querySelector('p');
       if(h)h.textContent='Weekly Sales Intelligence';
-      if(p)p.textContent='Core-LOB weekly targets, achievements and recovery actions across the selected scope.';
+      if(p)p.textContent='Separate weekly targets, achievements and recovery actions for iPhone, Mac, iPad, Watch and AirPods.';
     }
     setText('briefDate',model.through);
     setText('briefScope',`${scopeLabel(model)} · ${label} · sales through ${model.through}`);
-    setLabel('#page-dashboard .executiveKpi:nth-child(1) h3','🎯 Weekly Core-Unit Target');
-    setLabel('#page-dashboard .executiveKpi:nth-child(2) h3',`💰 Achieved Through ${model.through}`);
-    setLabel('#page-dashboard .executiveKpi:nth-child(3) h3','📊 Weekly Achievement');
-    setLabel('#page-dashboard .executiveKpi:nth-child(4) h3','🏃 Required Units / Day');
-    setLabel('#page-dashboard .executiveKpi:nth-child(5) h3','📈 Projected Week-End');
     setLabel('#mission h2','🎯 Weekly Mission Recovery Engine');
-    setLabel('#mission .card > .mini',`What this scope must deliver during ${label} to achieve its weekly core-unit target.`);
-    setLabel('#mission .healthMetric:nth-child(2) span','Required Units / Day');
-    setLabel('#mission .healthMetric:nth-child(3) span','Weekly Unit Balance');
-    setLabel('#mission .healthMetric:nth-child(4) span','Days Remaining');
+    setLabel('#mission .card > .mini',`Required target, achievement, gap and daily recovery for each LOB during ${label}.`);
     setLabel('#mission .recoveryTable thead tr', '');
     const missionHead=document.querySelector('#mission .recoveryTable thead');
     if(missionHead)missionHead.innerHTML='<tr><th>LOB</th><th>Weekly Target</th><th>Achieved</th><th>Balance</th><th>Required / Day</th><th>Priority</th><th>Status</th></tr>';
     setLabel('#mission .card.section:nth-of-type(5) h2','Week-End Forecast');
     setLabel('#trajectory h2','📈 Weekly Target vs Achievement Trajectory');
-    setLabel('#trajectory > .mini','Completed and current Sunday–Saturday weeks. Each point is actual core units as a percentage of that week’s target.');
+    setLabel('#trajectory > .mini','Completed and current Sunday–Saturday weeks, with a separate target-achievement line for every LOB.');
     setLabel('#trajectory > .mini:last-child','Targets come from the weekly target master. Actuals come from the appended sales invoice source and use the latest available day in the current week.');
-    setLabel('#gpt .card:first-child .mini','Select a business question to receive a role-scoped answer from current weekly targets and core-unit sales.');
-    setLabel('#rhythm > .card > .mini','A structured daily cadence for the current weekly core-unit mission.');
-    setLabel('#rhythm .rhythmSummaryCard:nth-child(2) span','Required Units / Day');
-    setLabel('#rhythm .rhythmSummaryCard:nth-child(3) span','Projected Week-End');
+    setLabel('#gpt .card:first-child .mini','Select a business question to receive a role-scoped answer with separate LOB targets and sales.');
+    setLabel('#rhythm > .card > .mini','A structured daily cadence with a separate mission for every LOB.');
   }
 
   function renderDashboard(model){
     updateStaticCopy(model);
-    const health=status(model);const weak=weakestLobs(model);
-    const storeRows=model.byStore.filter(row=>row.target>0).sort((a,b)=>b.balance-a.balance);
-    const onTrack=storeRows.filter(row=>row.achievement>=model.pace).length;
-    setText('execMonthlyTarget',fmt(model.target));
-    setText('execTargetScope',`${scopeLabel(model)} · core units`);
-    setText('execMtdAchieved',fmt(model.actual));
-    setLabel('#page-dashboard .executiveKpi:nth-child(2) .mini',`Sales through ${model.through}`);
-    setText('execAchievementPct',pct(model.achievement));
-    setText('execYetToAchieve',`${pct(Math.max(0,100-model.achievement))} remaining`);
-    setText('execDailyRR',fmt(model.requiredDaily));
-    setText('execDaysContext',`${model.remaining} days remaining`);
-    setText('execExitPct',`${fmt(model.projected)} · ${pct(model.projectedPct)}`);
-    setText('execExitStatus','Projected weekly units');
+    const rows=lobRows(model);const weak=[...rows].sort((a,b)=>a.achievement-b.achievement||b.gap-a.gap);
+    const cards=Array.from(document.querySelectorAll('#page-dashboard .executiveKpi'));
+    cards.forEach((card,index)=>{
+      const row=rows[index];if(!row)return;
+      const h=card.querySelector('h3');const metric=card.querySelector('.metric');const mini=card.querySelector('.mini');
+      if(h)h.textContent=`${row.lob} target vs achieved`;
+      if(metric)metric.textContent=`${fmt(row.actual)} / ${fmt(row.target)}`;
+      if(mini)mini.textContent=`${pct(row.achievement)} achieved · ${fmt(row.gap)} gap`;
+    });
 
-    setText('briefTitle',`${health.label}: ${pct(model.achievement)} achieved vs ${pct(model.pace)} elapsed pace`);
-    setLabel('#briefExitCard span','Week-End Outlook');
-    setLabel('.briefKpisDecision .briefKpi:nth-child(2) span','Weekly Unit Gap');
-    setText('briefExit',pct(model.projectedPct));
-    setText('briefExitSub',`${fmt(model.projected)} projected units`);
-    setText('briefGap',fmt(model.balance));
-    setText('briefGapSub','units remaining to weekly target');
-    setText('briefHealthLabel','Stores On Pace');
-    setText('briefHealth',`${onTrack}/${storeRows.length}`);
-    setText('briefHealthSub',`at or above ${pct(model.pace)} elapsed pace`);
-    setText('briefPriority',weak[0]?.lob||'—');
-    setText('briefPrioritySub',weak[0]?`${pct(weak[0].achievement)} of weekly target`:'No target');
-    setText('briefLeagueTitle','Store weekly position');
-    setText('briefLeagueSub','Largest remaining core-unit gaps');
+    const onPace=rows.filter(row=>row.achievement>=model.pace).length;
+    setText('briefTitle',`${onPace} of 5 LOBs are at or above ${pct(model.pace)} elapsed pace`);
+    const briefCards=Array.from(document.querySelectorAll('.briefKpisDecision .briefKpi'));
+    if(briefCards[0])briefCards[0].innerHTML=`<span>Week-End Target vs Achievement</span>${lobMetricList(rows,row=>`<b>T ${fmt(row.target)} · A ${fmt(row.actual)}</b><small>Exit ${fmt(row.projected)} · ${pct(row.projectedPct)}</small>`)}`;
+    if(briefCards[1])briefCards[1].innerHTML=`<span>Weekly Unit Gap by LOB</span>${lobMetricList(rows,row=>`<b>${fmt(row.gap)}</b><small>${fmt(row.requiredDaily)}/day</small>`)}`;
+    if(briefCards[2])briefCards[2].innerHTML=`<span>LOB Pace Status</span>${lobMetricList(rows,row=>`<b class="${row.achievement>=model.pace?'lobGood':'lobRisk'}">${row.achievement>=model.pace?'On pace':'Recover'}</b><small>${pct(row.achievement)}</small>`)}`;
+    if(briefCards[3])briefCards[3].innerHTML=`<span>Daily Requirement by LOB</span>${lobMetricList(rows,row=>`<b>${fmt(row.requiredDaily)}</b><small>${fmt(model.remaining)} days left</small>`)}`;
+
+    const storeRows=model.byStore.filter(row=>LOBS.some(lob=>num(row.byLob[lob]?.target)>0)).map(row=>{
+      const byLob=Object.fromEntries(LOBS.map(lob=>{const d=row.byLob[lob];const rate=d.target?d.actual/d.target*100:0;return [lob,{...d,rate,gap:Math.max(0,d.target-d.actual)}];}));
+      return {...row,byLob,maxGap:Math.max(...LOBS.map(lob=>byLob[lob].gap))};
+    }).sort((a,b)=>b.maxGap-a.maxGap);
+    setText('briefLeagueTitle','Store LOB position');
+    setText('briefLeagueSub','Achievement shown separately for every LOB');
     const leagueHead=document.querySelector('.briefLeague thead');
-    if(leagueHead)leagueHead.innerHTML='<tr><th>Store</th><th>Target</th><th>Achieved</th><th>Ach %</th><th>Gap</th></tr>';
-    setHtml('briefLeagueRows',storeRows.slice(0,8).map(row=>`<tr><td>${esc(row.store.replace(/^Aptronix\s+/i,''))}</td><td>${fmt(row.target)}</td><td>${fmt(row.actual)}</td><td>${pct(row.achievement)}</td><td>${fmt(row.balance)}</td></tr>`).join(''));
-    setHtml('briefActions',weak.slice(0,3).map((row,index)=>`<div class="briefAction"><b>${index+1}. Recover ${esc(row.lob)}</b><span>${fmt(row.gap)} units remain; ${fmt(model.remaining?row.gap/model.remaining:row.gap)} per day required.</span></div>`).join(''));
-    setText('briefInsight',model.projectedPct>=100?'Current pace projects weekly target achievement.':`Projected at ${pct(model.projectedPct)}; prioritise ${weak.slice(0,2).map(row=>row.lob).join(' and ')}.`);
+    if(leagueHead)leagueHead.innerHTML=`<tr><th>Store</th>${LOBS.map(lob=>`<th>${esc(lob)}</th>`).join('')}</tr>`;
+    setHtml('briefLeagueRows',storeRows.slice(0,8).map(row=>`<tr><td>${esc(row.store.replace(/^Aptronix\s+/i,''))}</td>${LOBS.map(lob=>{const d=row.byLob[lob];return `<td><b>${fmt(d.actual)}/${fmt(d.target)}</b><small>${pct(d.rate)}</small></td>`;}).join('')}</tr>`).join(''));
+    setHtml('briefActions',weak.slice(0,3).map((row,index)=>`<div class="briefAction"><b>${index+1}. Recover ${esc(row.lob)}</b><span>${fmt(row.gap)} units remain; ${fmt(row.requiredDaily)} per day required.</span></div>`).join(''));
+    setText('briefInsight',rows.map(row=>`${row.lob} ${pct(row.projectedPct)}`).join(' · '));
 
-    setText('focusHeadline',model.projectedPct>=100?'Protect the weekly run rate':'Recover the weekly core-unit gap');
-    setText('focusRisk',health.label);
-    setHtml('focusPriorities',weak.slice(0,3).map((row,index)=>`<div class="focusPriority"><span>Priority ${index+1}</span><b>${esc(row.lob)} · ${pct(row.achievement)}</b><small>${fmt(row.gap)} units remaining</small></div>`).join(''));
-    setText('focusStore',storeRows[0]?.store.replace(/^Aptronix\s+/i,'')||'—');
-    setLabel('.focusFooter > div:nth-child(1) span','Largest Weekly Unit-Gap Store');
-    setText('focusConcentration',storeRows.length?`${pct(sum(storeRows.slice(0,5).map(row=>row.balance))/Math.max(1,model.balance)*100)} in top 5 gaps`:'—');
-    setText('focusAttention',`${fmt(model.requiredDaily)} units/day required`);
-    setHtml('actionSteps',weak.slice(0,3).map((row,index)=>`<div class="actionStep"><span>${index+1}</span><div><b>${esc(row.lob)} recovery</b><small>Deliver ${fmt(model.remaining?row.gap/model.remaining:row.gap)} units/day across ${scopeLabel(model)}.</small></div></div>`).join(''));
-    setText('decisionCue',`Close ${fmt(model.balance)} units over ${model.remaining} remaining days; start with ${weak[0]?.lob||'the largest gap'}.`);
+    const weakest=weak[0];
+    const focusStore=storeRows.slice().sort((a,b)=>b.byLob[weakest.lob].gap-a.byLob[weakest.lob].gap)[0];
+    setText('focusHeadline','Recover the lagging LOBs');
+    setText('focusRisk',`${onPace}/5 on pace`);
+    setHtml('focusPriorities',weak.slice(0,3).map((row,index)=>`<div class="focusPriority"><span>Priority ${index+1}</span><b>${esc(row.lob)} · ${pct(row.achievement)}</b><small>T ${fmt(row.target)} · A ${fmt(row.actual)} · Gap ${fmt(row.gap)}</small></div>`).join(''));
+    setText('focusStore',focusStore?`${focusStore.store.replace(/^Aptronix\s+/i,'')} · ${weakest.lob} ${fmt(focusStore.byLob[weakest.lob].gap)}`:'—');
+    setLabel('.focusFooter > div:nth-child(1) span','Largest Store × LOB Gap');
+    setText('focusConcentration',`${rows.filter(row=>row.achievement<model.pace).length} LOBs below pace`);
+    setText('focusAttention',weak.slice(0,2).map(row=>`${row.lob} ${fmt(row.requiredDaily)}/day`).join(' · '));
+    setHtml('actionSteps',weak.slice(0,3).map((row,index)=>`<div class="actionStep"><span>${index+1}</span><div><b>${esc(row.lob)} recovery</b><small>Deliver ${fmt(row.requiredDaily)} units/day across ${scopeLabel(model)}.</small></div></div>`).join(''));
+    setText('decisionCue',weak.slice(0,3).map(row=>`${row.lob}: ${fmt(row.gap)} gap`).join(' · '));
 
-    const hits=storeRows.filter(row=>row.achievement>=model.pace).sort((a,b)=>b.achievement-a.achievement).slice(0,5);
-    const misses=storeRows.filter(row=>row.achievement<model.pace).sort((a,b)=>a.achievement-b.achievement).slice(0,5);
-    const item=(row,index,hit)=>{
-      const lob=LOBS.map(name=>({name,...row.byLob[name],rate:row.byLob[name].target?row.byLob[name].actual/row.byLob[name].target*100:0})).sort((a,b)=>hit?b.rate-a.rate:a.rate-b.rate)[0];
-      return `<div class="hm-item"><div class="hm-rank">${index+1}</div><div><div class="hm-title">${esc(row.store.replace(/^Aptronix\s+/i,''))}</div><div class="hm-signal">${pct(row.achievement)} of weekly target</div><div class="hm-reason">${hit?`${pct(row.achievement-model.pace)} points ahead of elapsed pace.`:`${pct(model.pace-row.achievement)} points behind elapsed pace; ${fmt(row.balance)} units remain.`} ${esc(lob?.name||'Core units')} is the ${hit?'strongest':'weakest'} LOB at ${pct(lob?.rate||0)}.</div><div class="hm-action"><b>Action:</b> ${hit?'Protect the leading LOB and replicate the store run rate.':`Prioritise ${esc(lob?.name||'the weakest LOB')} and recover the daily unit gap.`}</div></div></div>`;
-    };
+    const signals=storeRows.flatMap(store=>LOBS.map(lob=>({store:store.store,lob,...store.byLob[lob]}))).filter(row=>row.target>0);
+    const hits=signals.filter(row=>row.rate>=model.pace).sort((a,b)=>b.rate-a.rate).slice(0,5);
+    const misses=signals.filter(row=>row.rate<model.pace).sort((a,b)=>a.rate-b.rate||b.gap-a.gap).slice(0,5);
+    const item=(row,index,hit)=>`<div class="hm-item"><div class="hm-rank">${index+1}</div><div><div class="hm-title">${esc(row.store.replace(/^Aptronix\s+/i,''))} · ${esc(row.lob)}</div><div class="hm-signal">${fmt(row.actual)} / ${fmt(row.target)} · ${pct(row.rate)}</div><div class="hm-reason">${hit?`${pct(row.rate-model.pace)} points ahead of elapsed pace.`:`${pct(model.pace-row.rate)} points behind elapsed pace; ${fmt(row.gap)} units remain.`}</div><div class="hm-action"><b>Action:</b> ${hit?'Protect this LOB run rate.':`Recover ${fmt(model.remaining?row.gap/model.remaining:row.gap)} ${esc(row.lob)} units/day.`}</div></div></div>`;
     const hm=document.querySelector('.hm-section');
-    if(hm)hm.innerHTML=`<div class="hm-head"><div><h2>Hits &amp; Misses — ${esc(model.week)}</h2><p>Store performance against current weekly core-unit targets.</p></div><span class="hm-period">Through ${esc(model.through)}</span></div><div class="hm-grid"><div class="hm-panel hm-hit"><div class="hm-panel-title">Hits — performance to protect</div><div class="hm-list">${hits.length?hits.map((row,index)=>item(row,index,true)).join(''):'<div class="hm-item">No store is above elapsed pace yet.</div>'}</div></div><div class="hm-panel hm-miss"><div class="hm-panel-title">Misses — gaps requiring intervention</div><div class="hm-list">${misses.map((row,index)=>item(row,index,false)).join('')}</div></div></div><div class="hm-note"><b>Method:</b> Store achievement is compared with ${pct(model.pace)} elapsed-week pace. Targets and actuals cover iPhone, Mac, iPad, Watch and AirPods.</div>`;
+    if(hm)hm.innerHTML=`<div class="hm-head"><div><h2>Hits &amp; Misses — ${esc(model.week)}</h2><p>Store × LOB performance, ranked independently.</p></div><span class="hm-period">Through ${esc(model.through)}</span></div><div class="hm-grid"><div class="hm-panel hm-hit"><div class="hm-panel-title">Hits — performance to protect</div><div class="hm-list">${hits.length?hits.map((row,index)=>item(row,index,true)).join(''):'<div class="hm-item">No store × LOB pair is above pace yet.</div>'}</div></div><div class="hm-panel hm-miss"><div class="hm-panel-title">Misses — gaps requiring intervention</div><div class="hm-list">${misses.map((row,index)=>item(row,index,false)).join('')}</div></div></div><div class="hm-note"><b>Method:</b> Each store and LOB is independently compared with ${pct(model.pace)} elapsed-week pace.</div>`;
   }
 
   function renderGovernance(model){
     const source=document.querySelector('.governance-source');if(source)source.textContent='Weekly Sales Intelligence';
     const facts=document.querySelector('.governance-facts');
-    if(facts)facts.innerHTML=`<span><b>Through</b> ${esc(model.through)} 2026</span><span><b>Coverage</b> ${model.stores.size} stores · 5 core LOBs</span><span><b>Published</b> 10 Nov 2026</span>`;
+    if(facts)facts.innerHTML=`<span><b>Through</b> ${esc(model.through)} 2026</span><span><b>Coverage</b> ${model.stores.size} stores · 5 separate LOB views</span><span><b>Published</b> 10 Nov 2026</span>`;
     const statusNode=document.querySelector('.governance-status');
     if(statusNode)statusNode.innerHTML='<span class="governance-dot"></span>Validation Passed<small>19 checks</small>';
     const panel=document.querySelector('.governance-panel');
-    if(panel)panel.innerHTML=`<strong>Automated reconciliation</strong><div class="governance-check governance-check--pass"><span></span><div><b>Target hierarchy</b><small>15 ARMs · 69 stores · 313 target staff rows</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Current week</b><small>${esc(model.week)} · ${esc(model.label)} · through ${esc(model.through)}</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Core LOB scope</b><small>iPhone, Mac, iPad, Watch and AirPods</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Commercial source</b><small>Invoice sales, loan, trade-in and AppleCare fields; footfall excluded</small></div></div>`;
+    if(panel)panel.innerHTML=`<strong>Automated reconciliation</strong><div class="governance-check governance-check--pass"><span></span><div><b>Target hierarchy</b><small>15 ARMs · 69 stores · 313 target staff rows</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Current week</b><small>${esc(model.week)} · ${esc(model.label)} · through ${esc(model.through)}</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>LOB presentation</b><small>iPhone, Mac, iPad, Watch and AirPods shown separately</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Commercial source</b><small>Invoice sales, loan, trade-in and AppleCare fields; footfall excluded</small></div></div>`;
   }
 
   function renderMission(model){
-    const health=status(model);const weak=weakestLobs(model);
-    setText('recoveryHealth',health.label);
-    setText('monthProgressText',`${pct(model.achievement)} weekly achievement vs ${pct(model.pace)} elapsed pace`);
-    const fill=q('monthProgressFill');if(fill)fill.style.width=`${Math.min(100,model.achievement)}%`;
-    setText('recoveryRevenueToday',fmt(model.requiredDaily));
-    setText('recoveryBalance',fmt(model.balance));
-    setText('recoveryDays',fmt(model.remaining));
+    const rows=lobRows(model);const weak=[...rows].sort((a,b)=>a.achievement-b.achievement||b.gap-a.gap);
+    const health=document.querySelector('#mission .missionHealth');
+    if(health)health.innerHTML=`<div class="lobMissionGrid">${rows.map(row=>`<div class="lobMissionCard"><span><i style="background:${LOB_COLORS[row.lob]}"></i>${esc(row.lob)}</span><b>${fmt(row.actual)} / ${fmt(row.target)}</b><small>${pct(row.achievement)} achieved</small><div><em>Gap ${fmt(row.gap)}</em><em>${fmt(row.requiredDaily)}/day</em></div></div>`).join('')}</div>`;
     setHtml('recoveryRows',weak.map(row=>{
       const daily=model.remaining?row.gap/model.remaining:row.gap;
       const state=row.achievement>=model.pace?'On pace':row.achievement>=model.pace-5?'Watch':'Recover';
       return `<tr><td><b>${esc(row.lob)}</b></td><td>${fmt(row.target)}</td><td>${fmt(row.actual)}</td><td>${fmt(row.gap)}</td><td>${fmt(daily)}</td><td>${row===weak[0]?'P1':row===weak[1]?'P2':'P3'}</td><td>${state}</td></tr>`;
     }).join(''));
     setHtml('topPriorities',weak.slice(0,3).map((row,index)=>`<div class="priorityCard"><span>Priority ${index+1}</span><b>${esc(row.lob)}</b><small>${fmt(row.gap)} units remain · ${fmt(model.remaining?row.gap/model.remaining:row.gap)}/day</small></div>`).join(''));
-    setHtml('timeBasedActions',`<div class="timelineItem"><b>Opening</b><span>Allocate today’s ${fmt(model.requiredDaily)}-unit mission by store and LOB.</span></div><div class="timelineItem"><b>Midday</b><span>Review ${weak[0]?.lob||'LOB'} conversion and move effort to stores below ${pct(model.pace)} pace.</span></div><div class="timelineItem"><b>Closing</b><span>Reconcile actual sales to the weekly target and carry only the residual gap forward.</span></div>`);
-    setText('missionAiCoach',model.projectedPct>=100?`Current pace projects ${fmt(model.projected)} units, above the ${fmt(model.target)} weekly target. Protect the run rate and focus on ${weak[0]?.lob}.`:`At the current pace, the scope projects ${fmt(model.projected)} units (${pct(model.projectedPct)}). Recover ${fmt(model.requiredDaily)} units/day, led by ${weak.slice(0,2).map(row=>row.lob).join(' and ')}.`);
-    setText('outcomeMissionMet',fmt(model.projected));
-    setLabel('#mission .outcomeCard:nth-child(1) span','Projected Core Units at Current Pace');
-    setLabel('#mission .outcomeCard:nth-child(1) small','Expected week-end core units if the current average pace continues.');
-    setText('outcomeCurrentPace',fmt(Math.max(0,model.target-model.projected)));
-    setLabel('#mission .outcomeCard:nth-child(2) span','Projected Unit Gap vs Target');
-    setLabel('#mission .outcomeCard:nth-child(2) small','Expected weekly shortfall at the current pace.');
-    const uplift=model.actual&&model.remaining?Math.max(0,(model.requiredDaily/(model.actual/model.elapsed)-1)*100):0;
-    setText('outcomeRecovery',`+${pct(uplift)}`);
+    setHtml('timeBasedActions',`<div class="timelineItem"><b>Opening</b><span>${weak.slice(0,3).map(row=>`${row.lob} ${fmt(row.requiredDaily)}/day`).join(' · ')}</span></div><div class="timelineItem"><b>Midday</b><span>Review each LOB against ${pct(model.pace)} elapsed pace; start with ${weak[0]?.lob||'the lowest LOB'}.</span></div><div class="timelineItem"><b>Closing</b><span>Reconcile iPhone, Mac, iPad, Watch and AirPods separately and carry each residual gap forward.</span></div>`);
+    setText('missionAiCoach',rows.map(row=>`${row.lob}: ${fmt(row.actual)}/${fmt(row.target)} (${pct(row.achievement)}), ${fmt(row.requiredDaily)}/day required`).join(' · '));
+    const outcome=document.querySelector('#mission .outcomeGrid');
+    if(outcome)outcome.innerHTML=rows.map(row=>`<div class="outcomeCard"><span>${esc(row.lob)} week-end outlook</span><b>${fmt(row.projected)} / ${fmt(row.target)}</b><small>${pct(row.projectedPct)} projected · ${fmt(Math.max(0,row.target-row.projected))} projected gap</small></div>`).join('');
   }
 
   function commercialRows(model){
     const source=Array.isArray(SALES.commercialByStoreWeek)?SALES.commercialByStoreWeek:[];
     return source.filter(row=>row.week===model.week&&model.stores.has(row.store)).map(row=>{
-      const units=num(row.coreUnits);
-      const tradeRate=units?num(row.tradeInUnits)/units*100:0;
-      const financeRate=units?num(row.financeUnits)/units*100:0;
-      const swipeRate=units?num(row.fullSwipeUnits)/units*100:0;
-      const licenseRate=units?num(row.licenseUnits)/units*100:0;
-      const marginRate=num(row.netRevenue)?num(row.grossProfit)/num(row.netRevenue)*100:0;
-      const asp=units?num(row.coreRevenue)/units:0;
-      return {...row,units,tradeRate,financeRate,swipeRate,licenseRate,marginRate,asp};
+      const byLob=Object.fromEntries(LOBS.map(lob=>{
+        const units=num(row.lobUnits?.[lob]);
+        const trade=num(row.tradeInByLob?.[lob]);
+        const finance=num(row.financeByLob?.[lob]);
+        const license=num(row.licenseByLob?.[lob]);
+        return [lob,{units,trade,finance,license,
+          tradeRate:units?trade/units*100:0,
+          financeRate:units?finance/units*100:0,
+          licenseRate:units?license/units*100:0}];
+      }));
+      const units=sum(LOBS.map(lob=>byLob[lob].units));
+      const license=num(row.licenseUnits);
+      return {...row,units,license,byLob,overallLicenseRate:units?license/units*100:0};
     });
   }
 
   function renderCommercial(model){
     const rows=commercialRows(model);
     if(!rows.length)return;
-    const total=field=>sum(rows.map(row=>row[field]));
-    const units=total('coreUnits');
-    const netRevenue=total('netRevenue');
-    const coreRevenue=total('coreRevenue');
-    const gp=total('grossProfit');
-    const trade=total('tradeInUnits');
-    const finance=total('financeUnits');
-    const swipe=total('fullSwipeUnits');
-    const license=total('licenseUnits');
-    const money=value=>{
-      value=num(value);
-      if(Math.abs(value)>=10000000)return `₹${(value/10000000).toFixed(2)} Cr`;
-      if(Math.abs(value)>=100000)return `₹${(value/100000).toFixed(1)} L`;
-      return `₹${fmt(value)}`;
-    };
+    const lobTotals=Object.fromEntries(LOBS.map(lob=>[lob,{
+      units:sum(rows.map(row=>row.byLob[lob].units)),
+      trade:sum(rows.map(row=>row.byLob[lob].trade)),
+      finance:sum(rows.map(row=>row.byLob[lob].finance)),
+      license:sum(rows.map(row=>row.byLob[lob].license)),
+    }]));
+    for(const lob of LOBS){const d=lobTotals[lob];d.tradeRate=d.units?d.trade/d.units*100:0;d.financeRate=d.units?d.finance/d.units*100:0;d.licenseRate=d.units?d.license/d.units*100:0;}
+    const allUnits=sum(LOBS.map(lob=>lobTotals[lob].units));
+    const allLicense=sum(rows.map(row=>row.license));
+    const overallLicenseRate=allUnits?allLicense/allUnits*100:0;
     const commercial=q('commercial');
     const header=commercial?.querySelector('.commercialHeader');
     if(header){
       const h=header.querySelector('h2');const p=header.querySelector('p');const fresh=header.querySelector('.commercialFreshness');
       if(h)h.textContent='💳 Weekly Commercial Levers';
-      if(p)p.textContent='Sales value, gross profit, loan attach and trade-in attach calculated from the sales invoice source.';
+      if(p)p.textContent='Separate LOB sales, loan attach, trade-in attach and AppleCare / license attach calculated from the sales invoice source.';
       if(fresh)fresh.textContent=`${model.week} · through ${model.through}`;
     }
-    setText('commercialScope',`${scopeLabel(model)} · ${fmt(units)} core units · no footfall dependency`);
-    const cards=Array.from(document.querySelectorAll('#commercial .commercialKpis .commercialKpi'));
-    const cardValues=[
-      ['Core Units',fmt(units),`${fmt(model.actual)} staff-attributed`,'Store-level source sales'],
-      ['Core Revenue',money(coreRevenue),`${money(units?coreRevenue/units:0)} ASP`,'Core LOB sales value'],
-      ['Trade-in Attach',pct(units?trade/units*100:0),`${fmt(trade)} of ${fmt(units)} units`,'Affordability field contains Trade-in'],
-      ['Loan Attach',pct(units?finance/units*100:0),`${fmt(finance)} of ${fmt(units)} units`,'EMI, finance, FTI or credit'],
-      ['AppleCare / License Attach',pct(units?license/units*100:0),`${fmt(license)} of ${fmt(units)} units`,'AppleCare+ and Protect+ quantities'],
-      ['Gross Margin',pct(netRevenue?gp/netRevenue*100:0),`${money(gp)} gross profit`,'GP ÷ net sales value'],
-      ['Net Sales Value',money(netRevenue),`${money(total('discountValue'))} MRP discount`,'All mapped invoice rows'],
-    ];
-    cards.forEach((card,index)=>{
-      const values=cardValues[index];if(!values)return;
-      const title=card.querySelector('h3');const metric=card.querySelector('.metric');const qty=card.querySelector('.commercialQty');const benchmark=card.querySelector('.commercialBenchmark');
-      if(title)title.textContent=values[0];if(metric)metric.textContent=values[1];if(qty)qty.textContent=values[2];if(benchmark)benchmark.textContent=values[3];
-    });
+    setText('commercialScope',`${scopeLabel(model)} · five separate LOB views · no footfall dependency`);
+    const kpis=document.querySelector('#commercial .commercialKpis');
+    if(kpis)kpis.innerHTML=`${LOBS.map(lob=>{const d=lobTotals[lob];const target=model.byLob[lob]?.target||0;return `<div class="card commercialKpi lob"><h3>${esc(lob)} sales</h3><div class="metric">${fmt(d.units)}</div><span class="commercialQty">Target ${fmt(target)} · ${target?pct(d.units/target*100):'—'}</span><span class="commercialBenchmark">Invoice units shown separately</span></div>`;}).join('')}<div class="card commercialKpi trade"><h3>Trade-in attach by LOB</h3>${lobMetricList(LOBS.map(lob=>({lob,...lobTotals[lob]})),row=>`<b>${pct(row.tradeRate)}</b><small>${fmt(row.trade)}/${fmt(row.units)}</small>`)}</div><div class="card commercialKpi loan"><h3>Loan attach by LOB</h3>${lobMetricList(LOBS.map(lob=>({lob,...lobTotals[lob]})),row=>`<b>${pct(row.financeRate)}</b><small>${fmt(row.finance)}/${fmt(row.units)}</small>`)}</div><div class="card commercialKpi protection"><h3>iPhone AppleCare / license attach</h3><div class="metric">${pct(lobTotals.iPhone.licenseRate)}</div><span class="commercialQty">${fmt(lobTotals.iPhone.license)} of ${fmt(lobTotals.iPhone.units)} iPhones</span><span class="commercialBenchmark">iPhone protection only</span></div><div class="card commercialKpi protection"><h3>Overall AppleCare / license attach</h3><div class="metric">${pct(overallLicenseRate)}</div><span class="commercialQty">${fmt(allLicense)} of ${fmt(allUnits)} devices</span><span class="commercialBenchmark">All five LOBs, shown as requested</span></div>`;
 
-    const rankingTitles=[
-      ['Core Units','Highest and lowest unit sales'],
-      ['Trade-in Attach','Highest and lowest attach rate'],
-      ['Loan Attach','Highest and lowest loan attach rate'],
-    ];
-    Array.from(document.querySelectorAll('#commercial .commercialRankingCard')).forEach((card,index)=>{
-      const span=card.querySelector('.commercialRankingTitle span');const bold=card.querySelector('.commercialRankingTitle b');
-      if(span)span.textContent=rankingTitles[index][0];if(bold)bold.textContent=rankingTitles[index][1];
-    });
     const list=(ordered,metric)=>ordered.slice(0,5).map((row,index)=>`<li><span>${index+1}</span><b title="${esc(row.store)}">${esc(row.store.replace(/^Aptronix\s+/i,''))}</b><strong>${metric(row)}</strong></li>`).join('');
-    const eligible=rows.filter(row=>row.units>0);
-    const byUnits=[...eligible].sort((a,b)=>b.units-a.units);
-    const byTrade=[...eligible].sort((a,b)=>b.tradeRate-a.tradeRate||b.units-a.units);
-    const byFinance=[...eligible].sort((a,b)=>b.financeRate-a.financeRate||b.units-a.units);
-    setHtml('tradeTopRows',list(byUnits,row=>fmt(row.units)));
-    setHtml('tradeBottomRows',list([...byUnits].reverse(),row=>fmt(row.units)));
-    setHtml('loanTopRows',list(byTrade,row=>pct(row.tradeRate)));
-    setHtml('loanBottomRows',list([...byTrade].reverse(),row=>pct(row.tradeRate)));
-    setHtml('licenseTopRows',list(byFinance,row=>pct(row.financeRate)));
-    setHtml('licenseBottomRows',list([...byFinance].reverse(),row=>pct(row.financeRate)));
+    const rankingGrid=document.querySelector('#commercial .commercialRankingGrid');
+    if(rankingGrid)rankingGrid.innerHTML=LOBS.map(lob=>{const eligible=rows.filter(row=>row.byLob[lob].units>0);const ordered=[...eligible].sort((a,b)=>b.byLob[lob].units-a.byLob[lob].units);return `<div class="card commercialRankingCard lob"><div class="commercialRankingTitle"><span>${esc(lob)}</span><b>Highest and lowest unit sales</b></div><div class="commercialRankColumns"><div><h3>Top 5</h3><ol>${list(ordered,row=>fmt(row.byLob[lob].units))}</ol></div><div><h3>Bottom 5</h3><ol>${list([...ordered].reverse(),row=>fmt(row.byLob[lob].units))}</ol></div></div></div>`;}).join('');
     const rankNote=document.querySelector('#commercial .commercialRankingNote');
-    if(rankNote)rankNote.textContent='Rankings use current-week store sales from the invoice source. Loan and trade-in attach rates use net core units as the denominator. Footfall and conversion are excluded because the source does not contain footfall.';
+    if(rankNote)rankNote.textContent='Each ranking uses only that LOB’s current-week invoice units. Loan, trade-in and protection attach rates use the matching LOB unit denominator. Footfall and conversion are excluded because the source does not contain footfall.';
 
     const grid=document.querySelector('#commercial .commercialGrid');
     if(grid){
-      const sorted=[...eligible].sort((a,b)=>b.coreRevenue-a.coreRevenue);
-      grid.innerHTML=`<div class="card"><h2>${esc(model.week)} LOB Commercial Mix</h2><div class="yoyCompare">${LOBS.map(lob=>{const d=model.byLob[lob];return `<div><span>${esc(lob)}</span><b>${fmt(d.actual)} / ${fmt(d.target)}</b><small>${d.target?pct(d.actual/d.target*100):'—'} achieved</small></div>`;}).join('')}</div><div class="commercialQa">Store-level invoice sales include ${fmt(units)} net core units. ${fmt(model.actual)} are attributed to mapped target staff; the difference remains visible here instead of being discarded. Footfall and conversion are hidden because they are unavailable in this source.</div></div><div class="card"><h2>Store-Level Weekly Commercial View</h2><div class="mini" style="margin-bottom:12px">Sorted by core revenue. All values recalculate for the selected scope.</div><div class="commercialTableWrap"><table class="table commercialTable"><thead><tr><th>Store</th><th>Core Units</th><th>Core Revenue</th><th>ASP</th><th>Trade-in Attach</th><th>Loan Attach</th><th>AppleCare Attach</th><th>Gross Margin</th></tr></thead><tbody>${sorted.map(row=>`<tr><td><b>${esc(row.store.replace(/^Aptronix\s+/i,''))}</b></td><td>${fmt(row.units)}</td><td>${money(row.coreRevenue)}</td><td>${money(row.asp)}</td><td>${pct(row.tradeRate)}</td><td>${pct(row.financeRate)}</td><td>${pct(row.licenseRate)}</td><td>${pct(row.marginRate)}</td></tr>`).join('')}</tbody></table></div></div>`;
+      const sorted=[...rows].sort((a,b)=>b.byLob.iPhone.units-a.byLob.iPhone.units);
+      grid.innerHTML=`<div class="card"><h2>${esc(model.week)} attachment by LOB</h2><div class="commercialTableWrap"><table class="table commercialTable"><thead><tr><th>LOB</th><th>Units</th><th>Trade-in</th><th>Trade-in %</th><th>Loan</th><th>Loan %</th><th>AppleCare / License</th><th>Attach %</th></tr></thead><tbody>${LOBS.map(lob=>{const d=lobTotals[lob];return `<tr><td><b>${esc(lob)}</b></td><td>${fmt(d.units)}</td><td>${fmt(d.trade)}</td><td>${pct(d.tradeRate)}</td><td>${fmt(d.finance)}</td><td>${pct(d.financeRate)}</td><td>${fmt(d.license)}</td><td>${pct(d.licenseRate)}</td></tr>`;}).join('')}</tbody></table></div><div class="commercialQa">All five LOBs use their own invoice-unit denominator. Overall AppleCare / license attach is retained only as the additional cross-LOB view requested above.</div></div><div class="card"><h2>Store-level LOB view</h2><div class="mini" style="margin-bottom:12px">Sorted by iPhone units. Every product column is independent.</div><div class="commercialTableWrap"><table class="table commercialTable"><thead><tr><th>Store</th>${LOBS.map(lob=>`<th>${esc(lob)}</th>`).join('')}<th>iPhone AppleCare</th><th>Overall AppleCare</th></tr></thead><tbody>${sorted.map(row=>`<tr><td><b>${esc(row.store.replace(/^Aptronix\s+/i,''))}</b></td>${LOBS.map(lob=>`<td>${fmt(row.byLob[lob].units)}</td>`).join('')}<td>${pct(row.byLob.iPhone.licenseRate)}</td><td>${pct(row.overallLicenseRate)}</td></tr>`).join('')}</tbody></table></div></div>`;
     }
   }
 
@@ -322,24 +286,31 @@
     const points=relevant.map(week=>aggregate(week,model.stores));
     const svg=q('weeklyTrajectoryChart');
     if(svg){
-      const max=Math.max(100,...points.map(row=>row.achievement));
+      svg.setAttribute('aria-label','Weekly target achievement trajectory by LOB');
+      const rates=points.flatMap(row=>LOBS.map(lob=>row.byLob[lob].target?row.byLob[lob].actual/row.byLob[lob].target*100:0));
+      const max=Math.max(100,...rates);
       const x=index=>70+(points.length===1?0:index*(760/(points.length-1)));
       const y=value=>250-(Math.min(max,value)/max*190);
-      const poly=points.map((row,index)=>`${x(index)},${y(row.achievement)}`).join(' ');
-      svg.innerHTML=`<line x1="70" y1="250" x2="840" y2="250" stroke="#cbd5e1"/><line x1="70" y1="60" x2="70" y2="250" stroke="#cbd5e1"/><line x1="70" y1="${y(100)}" x2="840" y2="${y(100)}" stroke="#94a3b8" stroke-dasharray="6 6"/><text x="75" y="${y(100)-8}" fill="#64748b" font-size="12">100% target</text><polyline points="${poly}" fill="none" stroke="#2563eb" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>${points.map((row,index)=>`<circle cx="${x(index)}" cy="${y(row.achievement)}" r="7" fill="#fff" stroke="#2563eb" stroke-width="4"/><text x="${x(index)}" y="${y(row.achievement)-14}" text-anchor="middle" fill="#0f172a" font-weight="700" font-size="13">${pct(row.achievement)}</text><text x="${x(index)}" y="278" text-anchor="middle" fill="#64748b" font-size="13">${row.week}</text>`).join('')}`;
+      const base=`<line x1="70" y1="250" x2="840" y2="250" stroke="#cbd5e1"/><line x1="70" y1="60" x2="70" y2="250" stroke="#cbd5e1"/><line x1="70" y1="${y(100)}" x2="840" y2="${y(100)}" stroke="#94a3b8" stroke-dasharray="6 6"/><text x="75" y="${y(100)-8}" fill="#64748b" font-size="12">100% target</text>${points.map((row,index)=>`<text x="${x(index)}" y="278" text-anchor="middle" fill="#64748b" font-size="13">${row.week}</text>`).join('')}`;
+      const lines=LOBS.map((lob,lobIndex)=>{
+        const values=points.map(row=>row.byLob[lob].target?row.byLob[lob].actual/row.byLob[lob].target*100:0);
+        const poly=values.map((value,index)=>`${x(index)},${y(value)}`).join(' ');
+        return `<polyline points="${poly}" fill="none" stroke="${LOB_COLORS[lob]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${values.map((value,index)=>`<circle cx="${x(index)}" cy="${y(value)}" r="4" fill="#fff" stroke="${LOB_COLORS[lob]}" stroke-width="3"><title>${esc(lob)} ${points[index].week}: ${pct(value)}</title></circle>`).join('')}<g transform="translate(${115+lobIndex*145},28)"><line x1="0" y1="0" x2="24" y2="0" stroke="${LOB_COLORS[lob]}" stroke-width="4"/><text x="30" y="4" fill="#475569" font-size="11">${esc(lob)}</text></g>`;
+      }).join('');
+      svg.innerHTML=base+lines;
     }
-    setHtml('weekCards',points.map(row=>`<div class="weekCard"><span>${row.week}</span><b>${pct(row.achievement)}</b><small>${fmt(row.actual)} / ${fmt(row.target)} units${row.week===model.week?` · through ${model.through}`:''}</small></div>`).join(''));
+    setHtml('weekCards',points.map(row=>`<div class="weekCard"><span>${row.week}${row.week===model.week?` · through ${model.through}`:''}</span>${lobMetricList(LOBS.map(lob=>{const d=row.byLob[lob];return {lob,...d,rate:d.target?d.actual/d.target*100:0};}),d=>`<b>${pct(d.rate)}</b><small>${fmt(d.actual)}/${fmt(d.target)}</small>`)}</div>`).join(''));
     const head=document.querySelector('#trajectory .trajectoryTable thead');
     if(head)head.innerHTML=`<tr><th>LOB</th>${points.map(row=>`<th>${row.week}</th>`).join('')}<th>Current Target</th><th>Current Actual</th><th>Balance</th></tr>`;
     setHtml('weeklyKpiRows',LOBS.map(lob=>`<tr><td><b>${esc(lob)}</b></td>${points.map(row=>{const d=row.byLob[lob];return `<td>${d.target?pct(d.actual/d.target*100):'—'}<small>${fmt(d.actual)}/${fmt(d.target)}</small></td>`;}).join('')}<td>${fmt(model.byLob[lob].target)}</td><td>${fmt(model.byLob[lob].actual)}</td><td>${fmt(Math.max(0,model.byLob[lob].target-model.byLob[lob].actual))}</td></tr>`).join(''));
   }
 
   function renderCopilot(model){
-    const weak=weakestLobs(model);const stores=model.byStore.filter(row=>row.target>0).sort((a,b)=>b.balance-a.balance);
+    const rows=lobRows(model);const weak=[...rows].sort((a,b)=>a.achievement-b.achievement||b.gap-a.gap);
     const question=q('copilotQuestion')?.selectedOptions?.[0]?.textContent||'current weekly performance';
     setText('copilotResponseTitle',question);
     setText('copilotConfidence','Verified weekly data');
-    setHtml('copilotAnswer',`<div class="copilotBlock what"><h3>What</h3><p>${esc(scopeLabel(model))} has achieved <b>${fmt(model.actual)} of ${fmt(model.target)} core units (${pct(model.achievement)})</b> through ${esc(model.through)}. Elapsed-week pace is ${pct(model.pace)}.</p></div><div class="copilotBlock why"><h3>Why</h3><p>The largest LOB gap is <b>${esc(weak[0]?.lob||'—')} (${fmt(weak[0]?.gap||0)} units)</b>. The largest store gap is <b>${esc(stores[0]?.store.replace(/^Aptronix\s+/i,'')||'—')} (${fmt(stores[0]?.balance||0)} units)</b>.</p></div><div class="copilotBlock how"><h3>How to Recover — Suggested Action</h3><p>Deliver <b>${fmt(model.requiredDaily)} core units per remaining day</b>. Prioritise ${esc(weak.slice(0,2).map(row=>row.lob).join(' and '))}, then review stores below ${pct(model.pace)} pace at midday.</p></div><div class="copilotImpact"><span>Expected Business Impact</span><b>Closing the daily requirement projects 100% of the weekly target.</b></div>`);
+    setHtml('copilotAnswer',`<div class="copilotBlock what"><h3>Target vs achieved by LOB</h3>${lobMetricList(rows,row=>`<b>${fmt(row.actual)} / ${fmt(row.target)}</b><small>${pct(row.achievement)}</small>`)}</div><div class="copilotBlock why"><h3>Largest LOB gaps</h3>${lobMetricList(weak,row=>`<b>${fmt(row.gap)}</b><small>${fmt(row.requiredDaily)}/day</small>`)}</div><div class="copilotBlock how"><h3>How to recover</h3><p>Prioritise ${esc(weak.slice(0,2).map(row=>row.lob).join(' and '))}. Review each LOB independently against ${pct(model.pace)} elapsed pace at midday.</p></div><div class="copilotImpact"><span>Expected Business Impact</span><b>Closing each LOB’s daily requirement delivers its own weekly target.</b></div>`);
   }
 
   function populateCopilot(){
@@ -357,11 +328,12 @@
   }
 
   function renderRhythm(model){
-    setText('rhythmRevenueMission',fmt(model.requiredDaily));
-    setText('rhythmExitPct',pct(model.projectedPct));
+    const rows=lobRows(model);const weak=[...rows].sort((a,b)=>a.achievement-b.achievement||b.gap-a.gap);
     const hour=new Date().getHours();
-    setText('rhythmCurrentStage',hour<11?'Opening':hour<16?'Midday Review':'Closing Review');
-    setHtml('rhythmList',`<div class="rhythmItem"><span>Opening</span><b>Allocate ${fmt(model.requiredDaily)} units</b><small>Split the mission by store and LOB.</small></div><div class="rhythmItem"><span>Midday</span><b>Check pace against ${pct(model.pace)}</b><small>Recover the largest store and ${esc(weakestLobs(model)[0]?.lob||'LOB')} gaps.</small></div><div class="rhythmItem"><span>Closing</span><b>Reconcile Week ${model.week.replace('W','')}</b><small>Update actuals and carry forward only the remaining unit gap.</small></div>`);
+    const stage=hour<11?'Opening':hour<16?'Midday Review':'Closing Review';
+    const summary=document.querySelector('#rhythm .rhythmSummary');
+    if(summary)summary.innerHTML=`<div class="rhythmSummaryCard"><span>Current stage</span><b>${stage}</b></div>${rows.map(row=>`<div class="rhythmSummaryCard"><span>${esc(row.lob)} required / day</span><b>${fmt(row.requiredDaily)}</b><small>${fmt(row.gap)} weekly gap</small></div>`).join('')}<div class="rhythmSummaryCard"><span>Next review</span><b>${hour<11?'11:00 AM':hour<16?'4:00 PM':'Next opening'}</b></div>`;
+    setHtml('rhythmList',`<div class="rhythmItem"><span>Opening</span><b>${rows.map(row=>`${row.lob} ${fmt(row.requiredDaily)}`).join(' · ')}</b><small>Allocate every LOB mission independently by store.</small></div><div class="rhythmItem"><span>Midday</span><b>Check five LOBs against ${pct(model.pace)} pace</b><small>Recover ${esc(weak.slice(0,2).map(row=>row.lob).join(' and '))} first.</small></div><div class="rhythmItem"><span>Closing</span><b>Reconcile Week ${model.week.replace('W','')} by LOB</b><small>Carry forward the separate iPhone, Mac, iPad, Watch and AirPods gaps.</small></div>`);
   }
 
   function render(){
