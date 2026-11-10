@@ -49,6 +49,15 @@ test('weekly commercial source covers all stores and uses invoice fields',()=>{
   const galleriaIphone17=sales.productByStoreWeek.find(row=>row.week==='W1'&&row.store==='Aptronix Galleria'&&row.lob==='iPhone'&&row.subLob==='IPHONE 17');
   assert.equal(galleriaIphone17?.units,10);
   assert.equal(galleriaIphone17?.location,'GURUGRAM');
+  const qtdIphone= sales.productByStoreWeek.filter(row=>row.lob==='iPhone');
+  const orgIphone17Mix=qtdIphone.filter(row=>row.subLob==='IPHONE 17').reduce((sum,row)=>sum+Number(row.units||0),0)/qtdIphone.reduce((sum,row)=>sum+Number(row.units||0),0)*100;
+  const stores=new Set(qtdIphone.map(row=>row.store));
+  const storeMixes=[...stores].map(store=>{
+    const rows=qtdIphone.filter(row=>row.store===store);const base=rows.reduce((sum,row)=>sum+Number(row.units||0),0);
+    return base?rows.filter(row=>row.subLob==='IPHONE 17').reduce((sum,row)=>sum+Number(row.units||0),0)/base*100:0;
+  });
+  assert.ok(storeMixes.some(value=>value>=orgIphone17Mix));
+  assert.ok(storeMixes.some(value=>value<orgIphone17Mix));
 });
 
 test('weekly UI labels loan and trade-in attach and excludes footfall calculations',()=>{
@@ -77,6 +86,10 @@ test('weekly UI labels loan and trade-in attach and excludes footfall calculatio
   assert.match(productUi,/row\.lob==='iPhone'/);
   assert.match(productUi,/productContributionMatrix/);
   assert.match(productUi,/data-contribution-metric/);
+  assert.match(productUi,/organisationMixBenchmark/);
+  assert.match(productUi,/Good performance/);
+  assert.match(productUi,/Needs improvement/);
+  assert.match(productUi,/Relative mix benchmark, not a sales target/);
   assert.doesNotMatch(productUi,/productContributionRows/);
   const html=fs.readFileSync(new URL('./index.html',import.meta.url),'utf8');
   assert.match(html,/data-page="product"/);
