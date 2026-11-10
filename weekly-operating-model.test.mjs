@@ -51,6 +51,8 @@ test('weekly UI labels loan and trade-in attach and excludes footfall calculatio
   assert.match(source,/Overall AppleCare \/ license attach/i);
   assert.match(source,/Weekly Unit Gap by LOB/);
   assert.match(source,/Week-End Target vs Achievement/);
+  assert.match(source,/commercialRankIndex/);
+  assert.match(source,/<em> units<\/em>/);
   assert.doesNotMatch(source,/footfall\s*\//i);
   const targetUi=fs.readFileSync(new URL('./weekly-targets-ui.js',import.meta.url),'utf8');
   assert.doesNotMatch(targetUi,/overallHead|targetTotal|actualTotal/);
