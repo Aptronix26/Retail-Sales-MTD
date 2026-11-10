@@ -11,6 +11,8 @@
   const pct=value=>`${num(value).toFixed(1)}%`;
   const cleanStore=value=>String(value||'').replace(/^Aptronix\s+/i,'');
   const productLabel=value=>String(value||'').replace(/^IPHONE\b/,'iPhone').replace(/^IPAD\b/,'iPad').replace(/^AIRPODS\b/,'AirPods');
+  const displayDate=value=>{const date=new Date(`${value}T00:00:00`);return Number.isNaN(date.getTime())?String(value||''):date.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});};
+  const weekLabel=week=>`Wk${String(week||'').replace(/^W/i,'')}`;
   const storeMap=()=>new Map((window.STORE_MAP||[]).map(row=>[row.store,row]));
   const currentUser=()=>typeof CURRENT_USER!=='undefined'?CURRENT_USER:null;
   const roleHasNetwork=role=>['RM','Admin / HO','HO','CEO','Business Head'].includes(role);
@@ -45,7 +47,7 @@
     const weekSelect=document.getElementById('productWeek');
     if(weekSelect&&!weekSelect.options.length){
       const firstStart=SALES.weekRanges?.[weeks[0]]?.start||'2026-09-27';
-      weekSelect.innerHTML=option('QTD',`Quarter to date · ${firstStart} to ${SALES.asOfDate}`)+weeks.map(week=>option(week,`${week.replace('W','Week ')} · ${SALES.weekRanges?.[week]?.start||''} to ${SALES.weekRanges?.[week]?.end||''}`)).join('');
+      weekSelect.innerHTML=option('QTD',`QTD · ${displayDate(firstStart)}–${displayDate(SALES.asOfDate)}`)+weeks.map(week=>option(week,`${weekLabel(week)} · ${displayDate(SALES.weekRanges?.[week]?.start||'')}–${displayDate(SALES.weekRanges?.[week]?.end||'')}`)).join('');
       weekSelect.value='QTD';
     }
     let lob=setOptions('productLob',LOBS,'All LOBs');
@@ -105,7 +107,9 @@
     const baseUnits=sum(filteredRows(true),'units');const mix=baseUnits?units/baseUnits*100:0;
     const selectedLob=value('productLob');const selectedSub=value('productSubLob');const selectedStore=value('productStore');
     const scope=[selectedLob==='All'?'All LOBs':selectedLob,selectedSub==='All'?'All sub-LOBs':productLabel(selectedSub),selectedStore==='All'?'All stores':cleanStore(selectedStore)].join(' · ');
-    document.getElementById('productScopeReadout').textContent=`${scope} · ${value('productWeek')==='QTD'?'Quarter to date from 27 Sep':value('productWeek')} · through ${SALES.asOfDate}`;
+    const period=value('productWeek');
+    const periodText=period==='QTD'?`QTD · ${displayDate(SALES.weekRanges?.W1?.start||'2026-09-27')}–${displayDate(SALES.asOfDate)}`:`${weekLabel(period)} · ${displayDate(SALES.weekRanges?.[period]?.start||'')}–${displayDate(SALES.weekRanges?.[period]?.end||'')}`;
+    document.getElementById('productScopeReadout').textContent=`${scope} · ${periodText}`;
     document.getElementById('productKpis').innerHTML=`
       <div><span>Sales achievement</span><b>${fmt(units)} units</b><small>Net invoice quantity</small></div>
       <div><span>Net revenue</span><b>${compactMoney(revenue)}</b><small>Selected product scope</small></div>
