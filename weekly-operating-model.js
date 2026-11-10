@@ -195,7 +195,7 @@
   function renderGovernance(model){
     const source=document.querySelector('.governance-source');if(source)source.textContent='Weekly Sales Intelligence';
     const facts=document.querySelector('.governance-facts');
-    if(facts)facts.innerHTML=`<span><b>Through</b> ${esc(model.through)} 2026</span><span><b>Coverage</b> ${model.stores.size} stores · 5 core LOBs</span><span><b>Published</b> 9 Nov 2026</span>`;
+    if(facts)facts.innerHTML=`<span><b>Through</b> ${esc(model.through)} 2026</span><span><b>Coverage</b> ${model.stores.size} stores · 5 core LOBs</span><span><b>Published</b> 10 Nov 2026</span>`;
     const statusNode=document.querySelector('.governance-status');
     if(statusNode)statusNode.innerHTML='<span class="governance-dot"></span>Validation Passed<small>19 checks</small>';
     const panel=document.querySelector('.governance-panel');
