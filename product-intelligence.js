@@ -141,9 +141,10 @@
     const arms=[...new Set(rows.map(row=>row.arm))].sort((a,b)=>num(byKey.get(`${b}\u241f${latestWeek}`)?.units)-num(byKey.get(`${a}\u241f${latestWeek}`)?.units)||a.localeCompare(b));
     const maxUnits=Math.max(...rows.map(row=>num(row.units)),1);
     const leader=byKey.get(`${arms[0]}\u241f${latestWeek}`);
-    const firstForLeader=byKey.get(`${arms[0]}\u241f${weeks[0]}`);
-    const delta=num(leader?.units)-num(firstForLeader?.units);
-    summary.innerHTML=`<div><span>${esc(weekLabel(latestWeek))} leader</span><b>${esc(leader?.arm||'—')}</b></div><div><span>${esc(label)} units</span><b>${fmt(leader?.units)}</b><small>absolute units sold</small></div>${weeks.length>1?`<div><span>Change vs ${esc(weekLabel(weeks[0]))}</span><b class="${delta>=0?'positive':'negative'}">${delta>=0?'+':''}${fmt(delta)} units</b></div>`:''}`;
+    const priorWeek=weeks[weeks.length-2];
+    const priorForLeader=byKey.get(`${arms[0]}\u241f${priorWeek}`);
+    const delta=num(leader?.units)-num(priorForLeader?.units);
+    summary.innerHTML=`<div><span>${esc(weekLabel(latestWeek))} leader</span><b>${esc(leader?.arm||'—')}</b></div><div><span>${esc(label)} units</span><b>${fmt(leader?.units)}</b><small>absolute units sold</small></div>${weeks.length>1?`<div><span>Change vs last week · ${esc(weekLabel(priorWeek))}</span><b class="${delta>=0?'positive':'negative'}">${delta>=0?'+':''}${fmt(delta)} units</b></div>`:''}`;
     matrix.innerHTML=`<table><thead><tr><th>ARM</th>${weeks.map(week=>`<th>${esc(weekLabel(week))}</th>`).join('')}</tr></thead><tbody>${arms.map(arm=>`<tr><th>${esc(arm)}</th>${weeks.map(week=>{
       const row=byKey.get(`${arm}\u241f${week}`);if(!row)return '<td><span class="productNoValue">—</span></td>';
       const units=num(row.units);const intensity=.08+.48*(Math.max(0,units)/maxUnits);
