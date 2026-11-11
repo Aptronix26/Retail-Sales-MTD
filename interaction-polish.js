@@ -56,6 +56,37 @@
     });
   }
 
+  const GRID_HEADERS=[
+    {selector:'.executiveKpis',title:'Current-week LOB scorecard',description:'Target, achieved units, achievement rate and remaining gap for each separate LOB in the selected scope.',inside:true},
+    {selector:'#commercial .commercialKpis',title:'Commercial attachment summary',description:'Weighted trade-in, loan and AppleCare / license attachment for the selected stores and current reporting period.',inside:true},
+    {selector:'#weeklyTargetKpis',title:'Selected-scope target summary',description:'Current week target and achievement shown separately for iPhone, Mac, iPad, Watch and AirPods.',inside:true},
+    {selector:'#weeklyTargetWorkspace .weeklyTargetTableWrap',title:'Staff target vs achievement detail',description:'ARM, store and staff-level weekly targets with attributable invoice units for every LOB.'},
+    {selector:'#mission .recoveryTableWrap',title:'LOB recovery requirement',description:'Weekly target, achieved units, remaining balance and required daily recovery for each LOB.'},
+    {selector:'#trajectory .weekCards',title:'Weekly LOB snapshot cards',description:'Separate achievement snapshots for each completed or current Sunday-to-Saturday week.',inside:true},
+    {selector:'#trajectory .trajectoryTableWrap',title:'Weekly LOB trajectory detail',description:'Target, weekly achievement, run rate and projected exit shown independently for every LOB.'},
+    {selector:'#product .productAnalysisGrid',title:'Selected product performance breakdown',description:'Sub-LOB/model, ARM and location performance for the active period and product filters.',inside:true},
+    {selector:'#admin .mappingSummary',title:'Source mapping summary',description:'Coverage checks for hierarchy stores, matched targets, missing targets, unknown stores and duplicate rows.',inside:true},
+    {selector:'#admin .tableWrap',title:'Retail hierarchy mapping',description:'RM, city, ARM and store assignments used to control dashboard scope and login access.'}
+  ];
+
+  function ensureGridHeaders(){
+    let sequence=0;
+    for(const definition of GRID_HEADERS){
+      document.querySelectorAll(definition.selector).forEach(target=>{
+        if(target.dataset.gridHeader==='true')return;
+        target.dataset.gridHeader='true';
+        const header=document.createElement('div');
+        const id=`data-grid-header-${++sequence}-${Math.random().toString(36).slice(2,7)}`;
+        header.className='dataGridHeader';
+        header.id=id;
+        header.innerHTML=`<div><h3>${definition.title}</h3><p>${definition.description}</p></div><span>Selected scope</span>`;
+        target.setAttribute('aria-labelledby',id);
+        if(definition.inside)target.insertBefore(header,target.firstChild);
+        else target.parentNode?.insertBefore(header,target);
+      });
+    }
+  }
+
   function addScrollTools(){
     const progress=document.createElement('div');
     progress.className='ui-scroll-progress';
@@ -81,12 +112,13 @@
   }
 
   function observeDynamicCards(){
-    const observer=new MutationObserver(()=>enhanceCards());
+    const observer=new MutationObserver(()=>{enhanceCards();ensureGridHeaders();});
     observer.observe(document.body,{childList:true,characterData:true,subtree:true});
   }
 
   function init(){
     enhanceCards();
+    ensureGridHeaders();
     trackPointer();
     enhanceTables();
     addScrollTools();
