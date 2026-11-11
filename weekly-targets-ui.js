@@ -42,7 +42,7 @@
       const storeRows=ROWS.filter(row=>row.store===user.user);
       const isManager=role==='Store Manager'&&/manager|\basm\b|head/i.test(user.jobTitle||'');
       if(isManager)return {rows:storeRows,role,mode:'store'};
-      const names=[user.employeeName,user.employeeFirstName].map(identityKey).filter(Boolean);
+      const names=[user.targetStaffName,user.employeeName,user.employeeFirstName].map(identityKey).filter(Boolean);
       const selfRows=storeRows.filter(row=>names.includes(identityKey(row.staff)));
       return {rows:selfRows,role,mode:'self'};
     }
