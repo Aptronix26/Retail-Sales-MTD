@@ -99,4 +99,5 @@ test('weekly UI labels loan and trade-in attach and excludes footfall calculatio
   assert.match(productUi,/Change vs last week/);
   const html=fs.readFileSync(new URL('./index.html',import.meta.url),'utf8');
   assert.match(html,/data-page="product"/);
+  assert.match(html,/BUSINESS_PAGES=\[[^\]]*'product'/);
 });
