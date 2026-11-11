@@ -7,6 +7,7 @@ const context={window:{}};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(new URL('./weekly-targets.js',import.meta.url),'utf8'),context);
 vm.runInContext(fs.readFileSync(new URL('./sales-achievements.js',import.meta.url),'utf8'),context);
+vm.runInContext(fs.readFileSync(new URL('./product-sales-data.js',import.meta.url),'utf8'),context);
 const targets=context.window.WEEKLY_STAFF_TARGETS;
 const sales=context.window.WEEKLY_STAFF_ACHIEVEMENTS;
 const lobs=Array.from(targets.lobOrder);
