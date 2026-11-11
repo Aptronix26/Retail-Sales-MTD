@@ -1873,8 +1873,11 @@ document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{loadAchievement
     if(el('greetName'))el('greetName').innerText=CURRENT_USER.user;
     if(el('loggedInUser'))el('loggedInUser').innerText=CURRENT_USER.user;
     if(el('loggedInRole'))el('loggedInRole').innerText=CURRENT_USER.role;
-    if(el('loggedInScope'))el('loggedInScope').innerText=CURRENT_USER.role+' · '+m.rows.length+' store'+(m.rows.length===1?'':'s');
-    if(el('sideScope'))el('sideScope').innerText=CURRENT_USER.user+' · '+m.rows.length+' store'+(m.rows.length===1?'':'s');
+    const activeScopeText=['RM','Admin / HO','CEO','Business Head'].includes(CURRENT_USER.role)
+      ?'Enterprise · 69 Stores'
+      :CURRENT_USER.role+' · '+m.rows.length+' store'+(m.rows.length===1?'':'s');
+    if(el('loggedInScope'))el('loggedInScope').innerText=activeScopeText;
+    if(el('sideScope'))el('sideScope').innerText=activeScopeText;
     if(typeof updateUploadStatus==='function')updateUploadStatus();
     if(typeof applyRolePermissions==='function')applyRolePermissions();
   };
