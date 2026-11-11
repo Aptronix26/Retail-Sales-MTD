@@ -95,3 +95,9 @@ table tr.ui-row-hover td.ui-column-hover{background:#dceaff!important}
   .card:hover,.briefKpi:hover,.briefPanel:hover,.commercialRankingCard:hover{transform:none!important}
 }
 
+.dataGridHeader{grid-column:1/-1;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 0 12px;padding:0 2px}
+.dataGridHeader h3{margin:0;color:var(--navy);font-size:16px;line-height:1.25;text-transform:none;letter-spacing:-.01em}
+.dataGridHeader p{margin:5px 0 0;color:var(--muted);font-size:12px;line-height:1.45;max-width:900px}
+.dataGridHeader>span{flex:0 0 auto;border:1px solid #cbdaf3;background:#f4f7ff;color:#315b9c;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+.weeklyTargetTableWrap+.dataGridHeader{margin-top:16px}
+@media(max-width:700px){.dataGridHeader{display:block}.dataGridHeader>span{display:inline-block;margin-top:8px}}
