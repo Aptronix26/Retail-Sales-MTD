@@ -3105,7 +3105,7 @@ window.PROD_DATASET_VERSION_2454="oct2026-2026-10-04-v1";
   function identity(){
     if(!CURRENT_USER)return;
     const name=CURRENT_USER.employeeName||CURRENT_USER.user||CURRENT_USER.role;
-    const vals={greetName:name,loggedInUser:name,loggedInRole:CURRENT_USER.role,loggedInScope:CURRENT_USER.scopeLabel||CURRENT_USER.user||''};
+    const networkWide=['RM','Admin / HO','CEO','Business Head'].includes(CURRENT_USER.role);\n    const scope=networkWide?'Enterprise · 69 Stores':CURRENT_USER.scopeLabel||CURRENT_USER.user||'';\n    const vals={greetName:name,loggedInUser:name,loggedInRole:CURRENT_USER.role,loggedInScope:scope};
     Object.entries(vals).forEach(([id,val])=>{const n=q(id);if(n)n.textContent=val;});
   }
 
