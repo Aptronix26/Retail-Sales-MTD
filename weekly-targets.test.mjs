@@ -7,6 +7,7 @@ const context={window:{}};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(new URL('./weekly-targets.js',import.meta.url),'utf8'),context);
 vm.runInContext(fs.readFileSync(new URL('./sales-achievements.js',import.meta.url),'utf8'),context);
+vm.runInContext(fs.readFileSync(new URL('./product-sales-data.js',import.meta.url),'utf8'),context);
 const data=context.window.WEEKLY_STAFF_TARGETS;
 const sales=context.window.WEEKLY_STAFF_ACHIEVEMENTS;
 
@@ -93,6 +94,11 @@ test('weekly workspace renders current-week target and achievement values',()=>{
   vm.runInContext(fs.readFileSync(new URL('./weekly-targets-ui.js',import.meta.url),'utf8'),uiContext);
   assert.equal(elements.get('weeklyTargetWeek').value,'W7');
   assert.match(elements.get('weeklyTargetKpis').innerHTML,/Through 10 Nov/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/1,037 \/ 3,432/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/243 \/ 707/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/191 \/ 434/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/119 \/ 379/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/240 \/ 642/);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Target</);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Achieved</);
 
