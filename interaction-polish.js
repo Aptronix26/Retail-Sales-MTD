@@ -73,7 +73,10 @@
     let sequence=0;
     for(const definition of GRID_HEADERS){
       document.querySelectorAll(definition.selector).forEach(target=>{
-        if(target.dataset.gridHeader==='true')return;
+        const existing=definition.inside
+          ?Array.from(target.children).find(child=>child.classList?.contains('dataGridHeader'))
+          :target.previousElementSibling?.classList?.contains('dataGridHeader')&&target.previousElementSibling;
+        if(existing)return;
         target.dataset.gridHeader='true';
         const header=document.createElement('div');
         const id=`data-grid-header-${++sequence}-${Math.random().toString(36).slice(2,7)}`;
