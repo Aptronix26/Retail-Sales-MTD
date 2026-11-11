@@ -63,6 +63,19 @@
     const staff=document.getElementById('weeklyTargetStaff')?.value||'All';
     return accessScope().rows.filter(row=>(arm==='All'||row.arm===arm)&&(store==='All'||row.store===store)&&(staff==='All'||row.staff===staff));
   }
+  function sourceActuals(rows,week){
+    const staff=document.getElementById('weeklyTargetStaff')?.value||'All';
+    const actuals=Object.fromEntries(LOBS.map(lob=>[lob,0]));
+    if(staff!=='All'){
+      for(const row of rows)for(const lob of LOBS)actuals[lob]+=number(row.achievements?.[week]?.[lob]);
+      return {actuals,mode:'staff'};
+    }
+    const stores=new Set(rows.map(row=>row.store));
+    for(const row of SALES?.productByStoreWeek||[]){
+      if(row.week===week&&stores.has(row.store)&&LOBS.includes(row.lob))actuals[row.lob]+=number(row.units);
+    }
+    return {actuals,mode:'source'};
+  }
   function populateStores(){
     const arm=document.getElementById('weeklyTargetArm').value;
     const stores=[...new Set(accessScope().rows.filter(row=>arm==='All'||row.arm===arm).map(row=>row.store))].sort();
@@ -112,7 +125,7 @@
     const week=document.getElementById('weeklyTargetWeek').value;
     const hasActual=weekHasActual(week);
     const targets=Object.fromEntries(LOBS.map(lob=>[lob,rows.reduce((sum,row)=>sum+number(row.targets?.[week]?.[lob]),0)]));
-    const actuals=Object.fromEntries(LOBS.map(lob=>[lob,rows.reduce((sum,row)=>sum+number(row.achievements?.[week]?.[lob]),0)]));
+    const {actuals,mode:actualMode}=sourceActuals(rows,week);
     const range=rangeFor(week);
     const periodNote=range?(range.isComplete?`${dateLabel(range.start)}–${dateLabel(range.end)}`:`Through ${dateLabel(SALES.asOfDate)}`):'Sunday–Saturday';
     document.getElementById('weeklyTargetKpis').innerHTML=LOBS.map(lob=>`<div class="weeklyTargetKpi"><span>${esc(lob)}</span><b>${hasActual?`${display(actuals[lob])} / ${display(targets[lob])}`:display(targets[lob])}</b><small>${hasActual?`${pct(actuals[lob],targets[lob])} achieved · ${periodNote}`:`Target · ${periodNote}`}</small></div>`).join('');
@@ -132,6 +145,7 @@
       `<span>${storeCount} store${storeCount===1?'':'s'}</span>`,
       `<span>${rows.length} staff rows</span>`,
       `<span>${mappedCount} achievement mappings</span>`,
+      `<span>${actualMode==='source'?'All valid source invoices':'Attributed staff invoices'}</span>`,
       ...(hasActual?coverageBadges:[]),
       sourceReviewCount?`<span class="review">${sourceReviewCount} source assignment to review</span>`:''
     ];
@@ -160,7 +174,7 @@
       <div class="weeklyTargetKpis" id="weeklyTargetKpis"></div>
       <div class="weeklyTargetMeta" id="weeklyTargetMeta"></div>
       <div class="weeklyTargetTableWrap"><table class="weeklyTargetTable"><thead><tr><th>ARM</th><th>Store</th><th>Staff</th>${LOBS.map(lob=>`<th class="metricHead"><span>${esc(lob)}</span><small>Target · Achieved</small></th>`).join('')}</tr></thead><tbody id="weeklyTargetRows"></tbody></table></div>
-      <div class="weeklyTargetFoot">Achievement uses net invoice quantity for POS and Sale Return transactions, reported separately for iPhone, Mac, iPad, Watch and AirPods. Cancelled, held, other-category and non-target-store rows are excluded. ${SALES?`${SALES.sourceRowCount.toLocaleString('en-IN')} source rows were processed; ${(SALES.unmappedExecutives||[]).length} sales identities have sales in these five LOBs but no staff-target row, so their units remain visible in each LOB's mapping coverage and are not assigned to another person.`:'Achievement source is not loaded.'} Kochi is assigned to Poornesh as confirmed by management.</div>`;
+      <div class="weeklyTargetFoot">Achievement uses net invoice quantity for POS and Sale Return transactions, reported separately for iPhone, Mac, iPad, Watch and AirPods. Network, ARM and store totals include every valid source invoice; an individual staff selection shows only invoices attributable to that staff member. Cancelled, held, other-category and non-target-store rows are excluded. ${SALES?`${SALES.sourceRowCount.toLocaleString('en-IN')} source rows were processed; ${(SALES.unmappedExecutives||[]).length} sales identities have sales in these five LOBs but no staff-target row, so their units remain visible in higher-level totals and mapping coverage but are not assigned to another person.`:'Achievement source is not loaded.'} Kochi is assigned to Poornesh as confirmed by management.</div>`;
     const heading=page.querySelector('h2');
     const intro=heading?.nextElementSibling;
     (intro||heading)?.insertAdjacentElement('afterend',workspace);
