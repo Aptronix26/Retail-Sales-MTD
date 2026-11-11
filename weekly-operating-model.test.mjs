@@ -103,4 +103,7 @@ test('weekly UI labels loan and trade-in attach and excludes footfall calculatio
   const html=fs.readFileSync(new URL('./index.html',import.meta.url),'utf8');
   assert.match(html,/data-page="product"/);
   assert.match(html,/BUSINESS_PAGES=\[[^\]]*'product'/);
+  const polish=fs.readFileSync(new URL('./interaction-polish.js',import.meta.url),'utf8');
+  for(const title of ['Current-week LOB scorecard','Commercial attachment summary','Staff target vs achievement detail','LOB recovery requirement','Weekly LOB trajectory detail','Selected product performance breakdown','Retail hierarchy mapping'])assert.match(polish,new RegExp(title));
+  assert.match(polish,/aria-labelledby/);
 });
