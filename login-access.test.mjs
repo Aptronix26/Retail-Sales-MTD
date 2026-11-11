@@ -82,6 +82,7 @@ test('business navigation is forced visible and stale monthly input grid is hidd
   assert.ok(html.includes("const networkWide=['RM','Admin / HO','CEO','Business Head'].includes(CURRENT_USER.role);"));
   assert.ok(html.includes("scopeLabel:enterpriseProfile?'Enterprise · 69 Stores':e.scopeLabel"));
   assert.ok(!html.includes('setTimeout(renderAll,100)'));
+  assert.ok(html.includes('loggedInScope:scope,sideScope:scope'));
   const css=fs.readFileSync(new URL('./weekly-targets.css',import.meta.url),'utf8');
   assert.ok(css.includes('#input>.legacyInputLabel,#input>.alignedInputTable,#input>.inputHelp{display:none!important}'));
 });
