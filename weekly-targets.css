@@ -26,3 +26,4 @@
 @media(min-width:1600px){#commercial .commercialRankingGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:1100px){.lobMissionGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.commercialKpis{grid-template-columns:repeat(2,minmax(0,1fr))}#commercial .commercialRankingGrid{grid-template-columns:1fr}}
 @media(max-width:700px){.lobMissionGrid,.commercialKpis{grid-template-columns:1fr}.briefKpisDecision .briefKpi,.weekCard{min-height:0}.lobMetricRow{grid-template-columns:minmax(72px,1fr) auto}.lobMetricRow b{font-size:11px}}
+#input>.legacyInputLabel,#input>.alignedInputTable,#input>.inputHelp{display:none!important}
