@@ -3107,7 +3107,7 @@ window.PROD_DATASET_VERSION_2454="oct2026-2026-10-04-v1";
     const name=CURRENT_USER.employeeName||CURRENT_USER.user||CURRENT_USER.role;
     const networkWide=['RM','Admin / HO','CEO','Business Head'].includes(CURRENT_USER.role);
     const scope=networkWide?'Enterprise · 69 Stores':CURRENT_USER.scopeLabel||CURRENT_USER.user||'';
-    const vals={greetName:name,loggedInUser:name,loggedInRole:CURRENT_USER.role,loggedInScope:scope};
+    const vals={greetName:name,loggedInUser:name,loggedInRole:CURRENT_USER.role,loggedInScope:scope,sideScope:scope};
     Object.entries(vals).forEach(([id,val])=>{const n=q(id);if(n)n.textContent=val;});
   }
 
@@ -3169,6 +3169,7 @@ window.PROD_DATASET_VERSION_2454="oct2026-2026-10-04-v1";
     document.body.classList.toggle('role-admin',user.role==='Admin / HO');
     identity();
     renderAll();
+    setTimeout(identity,150);
     return true;
   };
 
