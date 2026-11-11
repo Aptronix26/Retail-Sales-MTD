@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 83349)
-Total output lines: 3194
-
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Aptronix Daily MTD Intelligence</title><script src="./dashboard-config.js?v=20260822-1"></script><script src="./retail-metrics.js"></script><style>
 :root{--bg:#f3f6fb;--card:#fff;--ink:#101828;--muted:#667085;--line:#e4e7ec;--navy:#0b1f3a;--blue:#2563eb;--green:#16a34a;--amber:#d97706;--red:#dc2626;--softblue:#eff6ff;--softgreen:#ecfdf5;--softamber:#fffbeb;--softred:#fef2f2}
@@ -1806,7 +1803,249 @@ document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{loadAchievement
       {time:'Opening · 10:00 AM',title:'Set the day',text:`Confirm ${moneyCompact(m.dailyRR)} revenue mission, ${mac} Mac, ${iphone} iPhone and ${moneyCompact(acc)} accessories. Assign owners and review known blockers.`},
       {time:'Morning Huddle · 10:30 AM',title:'Align the team',text:`Brief the team on the scoped mission, priority customer opportunities and expected premium demonstration discipline. ${role==='RM'?'Set ARM-wise accountability.':role==='ARM'?'Confirm priority stores and escalation owners.':'Assign floor responsibilities and first-review commitments.'}`},
       {time:'Midday Review · 1:00 PM',title:'Check early conversion',text:`Review progress against ${moneyCompact(m.dailyRR)} daily run rate. Intervene where Mac, iPhone, accessories or MS Office are not moving as planned.`},
-      {time:'Recovery Review · 5:00 PM',title:'Close …3349 tokens truncated…includes('exit projection')||lower.includes('current exit')){
+      {time:'Recovery Review · 5:00 PM',title:'Close the gap',text:`Reprioritise remaining opportunities, pending quotations and high-value customers. Current run-rate exit is ${m.exitPct}%; focus on the biggest recoverable gaps.`},
+      {time:'Closing Review · 8:00 PM',title:'Lock tomorrow’s opening plan',text:`Capture achievements, misses, blockers and unresolved customer opportunities. Define tomorrow’s first three actions and required leadership support.`}
+    ];
+
+    const nextTimes=['10:30 AM','1:00 PM','5:00 PM','8:00 PM','Tomorrow 10:00 AM'];
+    if(el('rhythmCurrentStage'))el('rhythmCurrentStage').innerText=stages[active].title;
+    if(el('rhythmRevenueMission'))el('rhythmRevenueMission').innerText=moneyCompact(m.dailyRR);
+    if(el('rhythmExitPct'))el('rhythmExitPct').innerText=m.exitPct+'%';
+    if(el('rhythmNextReview'))el('rhythmNextReview').innerText=nextTimes[active];
+
+    el('rhythmList').innerHTML=stages.map((s,i)=>`<div class="rhythmStep">
+      <div class="rhythmTime">${s.time}</div>
+      <div class="rhythmContent"><b>${s.title}</b><span>${s.text}</span></div>
+      <span class="tag ${i===active?'blue':i<active?'green':'amber'}">${i===active?'Now':i<active?'Completed':'Planned'}</span>
+    </div>`).join('');
+  }
+
+  function configureRoleV23(){
+    if(!CURRENT_USER)return;
+    const role=CURRENT_USER.role,user=CURRENT_USER.user;
+    const rmSel=el('rm'),armSel=el('arm'),citySel=el('city'),storeSel=el('store');
+    [rmSel,armSel,citySel,storeSel].forEach(x=>{if(x){x.disabled=false;x.classList.remove('scopeLocked')}});
+
+    if(role==='Store Manager'){
+      const row=STORE_MAP.find(x=>x.store===user)||STORE_MAP[0];
+      setOptions('rm',[row.rm]);setOptions('arm',[row.arm]);setOptions('city',[row.city]);setOptions('store',[row.store]);
+      [rmSel,armSel,citySel,storeSel].forEach(x=>x&&x.classList.add('scopeLocked'));
+      return;
+    }
+
+    if(role==='RM'){
+      const rows=STORE_MAP.filter(x=>x.rm===user);
+      setOptions('rm',[user]);
+      setOptionsAll('arm','All ARMs',unique(rows.map(x=>x.arm)));
+      setOptionsAll('city','All Cities',unique(rows.map(x=>x.city)));
+      setOptionsAll('store','All Stores',unique(rows.map(x=>x.store)));
+      rmSel&&rmSel.classList.add('scopeLocked');
+      return;
+    }
+
+    if(role==='ARM'){
+      const rows=STORE_MAP.filter(x=>x.arm===user);
+      setOptions('rm',unique(rows.map(x=>x.rm)));setOptions('arm',[user]);
+      setOptionsAll('city','All Cities',unique(rows.map(x=>x.city)));
+      setOptionsAll('store','All Stores',unique(rows.map(x=>x.store)));
+      rmSel&&rmSel.classList.add('scopeLocked');armSel&&armSel.classList.add('scopeLocked');
+      return;
+    }
+
+    // CEO / Business Head / Admin default to full-enterprise view with optional drill-down.
+    setOptionsAll('rm','All RMs',unique(STORE_MAP.map(x=>x.rm)));
+    setOptionsAll('arm','All ARMs',unique(STORE_MAP.map(x=>x.arm)));
+    setOptionsAll('city','All Cities',unique(STORE_MAP.map(x=>x.city)));
+    setOptionsAll('store','All Stores',unique(STORE_MAP.map(x=>x.store)));
+  }
+
+  window.refreshV23=function(){
+    if(!CURRENT_USER)return;
+    ensureDataset();
+    const m=modelV23();
+    applyInputsV23(m);
+    renderExecutiveV23(m);
+    renderMissionV23(m);
+    renderTrajectoryV23(m);
+    renderCoachV23(m);
+    renderOperatingRhythmV234(m);
+    if(el('greetPrefix'))el('greetPrefix').innerText=greetingIST();
+    if(el('greetName'))el('greetName').innerText=CURRENT_USER.user;
+    if(el('loggedInUser'))el('loggedInUser').innerText=CURRENT_USER.user;
+    if(el('loggedInRole'))el('loggedInRole').innerText=CURRENT_USER.role;
+    if(el('loggedInScope'))el('loggedInScope').innerText=CURRENT_USER.role+' · '+m.rows.length+' store'+(m.rows.length===1?'':'s');
+    if(el('sideScope'))el('sideScope').innerText=CURRENT_USER.user+' · '+m.rows.length+' store'+(m.rows.length===1?'':'s');
+    if(typeof updateUploadStatus==='function')updateUploadStatus();
+    if(typeof applyRolePermissions==='function')applyRolePermissions();
+  };
+
+  window.loginApp=function(){
+    CURRENT_USER={role:v('loginRole'),user:v('loginUser')};
+    if(el('loginScreen'))el('loginScreen').style.display='none';
+    configureRoleV23();
+    navigateToPage('dashboard');
+    refreshV23();
+  };
+
+  const oldNav=navigateToPage;
+  window.navigateToPage=function(page){
+    if(page==='admin'&&CURRENT_USER?.role!=='Admin / HO')page='dashboard';
+    document.querySelectorAll('.appPage').forEach(p=>p.classList.remove('active'));
+    const target=page==='dashboard'?el('page-dashboard'):el(page);
+    if(target)target.classList.add('active');
+    document.querySelectorAll('.navitem[data-page]').forEach(n=>n.classList.toggle('active',n.dataset.page===page));
+    history.replaceState(null,'','#'+page);
+    window.scrollTo(0,0);
+    if(CURRENT_USER)setTimeout(refreshV23,0);
+  };
+
+  window.calculateOS=function(){if(CURRENT_USER)refreshV23()};
+  window.onRMChange=function(){
+    if(!CURRENT_USER)return;
+    const role=CURRENT_USER.role;
+    if(role==='Store Manager'||role==='ARM'||role==='RM')return;
+
+    let rows=STORE_MAP.slice();
+    if(!isAllOption(v('rm')))rows=rows.filter(x=>x.rm===v('rm'));
+    setOptionsAll('arm','All ARMs',unique(rows.map(x=>x.arm)));
+    setOptionsAll('city','All Cities',unique(rows.map(x=>x.city)));
+    setOptionsAll('store','All Stores',unique(rows.map(x=>x.store)));
+    refreshV23();
+  };
+
+  window.onARMChange=function(){
+    if(!CURRENT_USER)return;
+    const role=CURRENT_USER.role;
+    if(role==='Store Manager'||role==='ARM')return;
+
+    let rows=STORE_MAP.slice();
+    if(role==='RM')rows=rows.filter(x=>x.rm===CURRENT_USER.user);
+    else if(!isAllOption(v('rm')))rows=rows.filter(x=>x.rm===v('rm'));
+    if(!isAllOption(v('arm')))rows=rows.filter(x=>x.arm===v('arm'));
+
+    setOptionsAll('city','All Cities',unique(rows.map(x=>x.city)));
+    setOptionsAll('store','All Stores',unique(rows.map(x=>x.store)));
+    refreshV23();
+  };
+
+  window.onCityChange=function(){
+    if(!CURRENT_USER)return;
+    const role=CURRENT_USER.role;
+    if(role==='Store Manager')return;
+
+    let rows=STORE_MAP.slice();
+    if(role==='RM')rows=rows.filter(x=>x.rm===CURRENT_USER.user);
+    else if(role==='ARM')rows=rows.filter(x=>x.arm===CURRENT_USER.user);
+    else if(!isAllOption(v('rm')))rows=rows.filter(x=>x.rm===v('rm'));
+    if(role!=='ARM'&&!isAllOption(v('arm')))rows=rows.filter(x=>x.arm===v('arm'));
+    if(!isAllOption(v('city')))rows=rows.filter(x=>x.city===v('city'));
+
+    setOptionsAll('store','All Stores',unique(rows.map(x=>x.store)));
+    refreshV23();
+  };
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    ensureDataset();
+    setTimeout(populateLoginUsers,0);
+  });
+})();
+</script>
+<script>
+/* v2.3.6 Retail Business Copilot */
+(function(){
+  const roleQuestions={
+    'Executive Summary':[
+      'How is my business performing?',
+      'Why am I behind target?',
+      'Can I still achieve the monthly target?',
+      'What are my top three priorities?',
+      'What is the single biggest risk today?'
+    ],
+    'Revenue & Forecast':[
+      'What is my current exit projection?',
+      'What daily run rate is required?',
+      'How much revenue gap remains?',
+      'What pace uplift is required to hit target?',
+      'What revenue will I close at current pace?'
+    ],
+    'Store Intelligence':[
+      'Which stores need immediate intervention?',
+      'Which stores have the biggest revenue gaps?',
+      'Which stores are closest to target?',
+      'Which store should I visit first?',
+      'Which are my best-performing stores?'
+    ],
+    'Category Intelligence':[
+      'Which category is hurting performance most?',
+      'Show iPhone performance.',
+      'Show Mac performance.',
+      'Show iPad performance.',
+      'Show Apple Accessories performance.',
+      'Show 3PP Accessories performance.',
+      'Show MS Office performance.',
+      'Which category can recover fastest?'
+    ],
+    'Opportunity & Recovery':[
+      'Where is the biggest recovery opportunity?',
+      'Which three levers can improve exit fastest?',
+      'What should I focus on before closing?',
+      'Give me a recovery plan for the remaining month.'
+    ],
+    'Leadership Actions':[
+      'Prepare today’s review agenda.',
+      'What should I discuss in the ARM call?',
+      'Give me three actions for today.',
+      'What should I escalate to leadership?'
+    ]
+  };
+
+  const r0=x=>Math.round(Number(x||0));
+  const pct=(a,b)=>b?Math.round(Number(a||0)/Number(b||0)*100):0;
+  const cash=x=>{x=r0(x);if(Math.abs(x)>=10000000)return '₹'+Math.round(x/10000000)+' Cr';if(Math.abs(x)>=100000)return '₹'+Math.round(x/100000)+' L';if(Math.abs(x)>=1000)return '₹'+Math.round(x/1000)+' K';return '₹'+x.toLocaleString('en-IN')};
+
+  function scopeRowsCopilot(){return typeof scopeRowsV23==='function'?scopeRowsV23():STORE_MAP.slice();}
+  function aggregateCopilot(rows,dataset){
+    const fields=['revenue','appleAcc','nonAcc','mac','ipad','iphone','watch','airpods','license'];
+    const out={};
+    fields.forEach(f=>out[f]=rows.reduce((s,row)=>s+Number((dataset[normaliseStoreKey(row.store)]||{})[f]||0),0));
+    return out;
+  }
+  function copilotModel(){
+    const rows=scopeRowsCopilot(),target=aggregateCopilot(rows,TARGET_DATA),actual=aggregateCopilot(rows,ACH_DATA);
+    const elapsed=6,totalDays=31,days=25;
+    const balance=Math.max(0,target.revenue-actual.revenue),daily=balance/days;
+    const achPct=pct(actual.revenue,target.revenue),exitPct=pct((actual.revenue/elapsed)*totalDays,target.revenue);
+    const categories=[
+      ['iPhone',target.iphone,actual.iphone,false],['Mac',target.mac,actual.mac,false],['iPad',target.ipad,actual.ipad,false],
+      ['Watch',target.watch,actual.watch,false],['AirPods',target.airpods,actual.airpods,false],
+      ['Apple Accessories',target.appleAcc,actual.appleAcc,true],['3PP Accessories',target.nonAcc,actual.nonAcc,true],['MS Office',target.license,actual.license,false]
+    ].map(([name,t,a,money])=>({name,target:t,actual:a,money,achievement:pct(a,t),gap:Math.max(0,t-a),required:Math.max(0,t-a)/days})).sort((a,b)=>a.achievement-b.achievement);
+    const stores=rows.map(row=>{const t=TARGET_DATA[normaliseStoreKey(row.store)]||{},a=ACH_DATA[normaliseStoreKey(row.store)]||{};return {...row,target:Number(t.revenue||0),actual:Number(a.revenue||0),achievement:pct(a.revenue,t.revenue),gap:Math.max(0,Number(t.revenue||0)-Number(a.revenue||0))}});
+    return {rows,target,actual,balance,daily,achPct,exitPct,categories,stores};
+  }
+  function metricGrid(m){return `<div class="copilotMetricGrid"><div class="copilotMetric"><span>Achievement</span><b>${m.achPct}%</b></div><div class="copilotMetric"><span>Exit Projection</span><b>${m.exitPct}%</b></div><div class="copilotMetric"><span>Daily RR</span><b>${cash(m.daily)}</b></div></div>`}
+  function storeList(arr){return arr.slice(0,5).map((s,i)=>`<li><b>${i+1}. ${s.store}</b> — ${s.achievement}% achieved; ${cash(s.gap)} gap</li>`).join('')}
+  function categoryLine(x){return `${x.name}: ${x.achievement}% achieved, ${x.money?cash(x.required):Math.ceil(x.required)+' units'} required per day`}
+
+  window.askRetailCopilot=function(question){
+    const q=String(question||el('copilotQuestion')?.value||'').trim();
+    if(!q)return;
+    const m=copilotModel(),lower=q.toLowerCase();
+    const weak=m.categories[0],top3=m.categories.slice(0,3);
+    const gapStores=[...m.stores].sort((a,b)=>b.gap-a.gap);
+    const bestStores=[...m.stores].sort((a,b)=>b.achievement-a.achievement);
+    const closest=[...m.stores].filter(s=>s.achievement<100).sort((a,b)=>b.achievement-a.achievement);
+    let title='Retail Business Copilot',body='';
+
+    if(lower.includes('how is my business')||lower.includes('business performing')||lower.includes('summary')){
+      title='Business Performance Summary';body=`${metricGrid(m)}<p>The logged-in scope has achieved <b>${cash(m.actual.revenue)}</b> against a target of <b>${cash(m.target.revenue)}</b>.</p><p>Current pace projects a <b>${m.exitPct}%</b> month-end exit. The first recovery lever is <b>${weak.name}</b>.</p><ul>${top3.map(x=>`<li>${categoryLine(x)}</li>`).join('')}</ul>`;
+    }else if(lower.includes('why')&&lower.includes('behind')){
+      title='Why Performance Is Behind';body=`${metricGrid(m)}<p>The gap is driven primarily by the three lowest-achieving categories: <b>${top3.map(x=>x.name).join(', ')}</b>.</p><ul>${top3.map(x=>`<li>${categoryLine(x)}</li>`).join('')}</ul><p>The largest store-level gap is <b>${gapStores[0]?.store||'—'}</b> at <b>${cash(gapStores[0]?.gap||0)}</b>.</p>`;
+    }else if(lower.includes('can i still')||lower.includes('achieve the monthly')||lower.includes('hit target')){
+      title='Target Achievability';const uplift=Math.max(0,Math.round((m.daily/(m.actual.revenue/20)-1)*100));body=`${metricGrid(m)}<p><b>${m.exitPct>=100?'Yes — the current pace is sufficient.':'Recovery is still possible, but the current pace is insufficient.'}</b></p><p>The business must deliver <b>${cash(m.daily)} per day</b> for the remaining 22 days. This requires a <b>${uplift}% uplift</b> over the current average daily pace.</p>`;
+    }else if(lower.includes('top three')||lower.includes('priorit')){
+      title='Top Three Priorities';body=`<ol>${top3.map(x=>`<li><b>${x.name}</b> — ${categoryLine(x)}</li>`).join('')}</ol><p>Leadership attention should remain concentrated on these levers before expanding to lower-impact gaps.</p>`;
+    }else if(lower.includes('exit projection')||lower.includes('current exit')){
       title='Current Exit Projection';body=`${metricGrid(m)}<p>At the current average pace, projected month-end revenue is <b>${cash((m.actual.revenue/20)*31)}</b>, equal to <b>${m.exitPct}%</b> of target.</p>`;
     }else if(lower.includes('daily run rate')){
       title='Required Daily Run Rate';body=`<p>The required daily revenue run rate is <b>${cash(m.daily)}</b> for the remaining 22 days.</p><p>Remaining revenue balance: <b>${cash(m.balance)}</b>.</p>`;
@@ -2777,7 +3016,8 @@ window.PROD_DATASET_VERSION_2454="oct2026-2026-10-04-v1";
 </script>
 <script src="./daily-data.js?v=20261005-1"></script>
 <script src="./weekly-targets.js?v=20261110-1"></script>
-<script src="./sales-achievements.js?v=20261111-1"></script>
+<script src="./sales-achievements.js?v=20261111-2"></script>
+<script src="./product-sales-data.js?v=20261111-1"></script>
 <script src="./commercial-data.js?v=20261005-1"></script>
 
 <script>
