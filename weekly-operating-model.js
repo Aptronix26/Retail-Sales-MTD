@@ -61,13 +61,11 @@
         byLob[lob].target+=value;storeRow.byLob[lob].target+=value;
       }
     }
-    for(const row of SALES.rows||[]){
-      if(!stores.has(row.store))continue;
+    for(const row of SALES.productByStoreWeek||[]){
+      if(row.week!==week||!stores.has(row.store)||!LOBS.includes(row.lob))continue;
       const storeRow=ensure(row.store);
-      for(const lob of LOBS){
-        const value=num(row.achievements?.[week]?.[lob]);
-        byLob[lob].actual+=value;storeRow.byLob[lob].actual+=value;
-      }
+      const value=num(row.units);
+      byLob[row.lob].actual+=value;storeRow.byLob[row.lob].actual+=value;
     }
     for(const row of byStore.values())for(const lob of LOBS){row.target+=row.byLob[lob].target;row.actual+=row.byLob[lob].actual;}
     const target=sum(LOBS.map(lob=>byLob[lob].target));
