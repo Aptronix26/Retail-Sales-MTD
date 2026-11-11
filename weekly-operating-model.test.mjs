@@ -63,6 +63,7 @@ test('weekly commercial source covers all stores and uses invoice fields',()=>{
 
 test('weekly UI labels loan and trade-in attach and excludes footfall calculations',()=>{
   const source=fs.readFileSync(new URL('./weekly-operating-model.js',import.meta.url),'utf8');
+  assert.match(source,/SALES\.productByStoreWeek/);
   assert.match(source,/Loan attach by LOB/i);
   assert.match(source,/Trade-in attach by LOB/i);
   assert.match(source,/iPhone AppleCare \/ license attach/i);
@@ -73,6 +74,8 @@ test('weekly UI labels loan and trade-in attach and excludes footfall calculatio
   assert.match(source,/<em> units<\/em>/);
   assert.doesNotMatch(source,/footfall\s*\//i);
   const targetUi=fs.readFileSync(new URL('./weekly-targets-ui.js',import.meta.url),'utf8');
+  assert.match(targetUi,/SALES\?\.productByStoreWeek/);
+  assert.match(targetUi,/Network, ARM and store totals include every valid source invoice/);
   assert.doesNotMatch(targetUi,/overallHead|targetTotal|actualTotal/);
   const productUi=fs.readFileSync(new URL('./product-intelligence.js',import.meta.url),'utf8');
   assert.match(productUi,/Sub-LOB \/ model/);
