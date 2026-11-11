@@ -3159,7 +3159,8 @@ window.PROD_DATASET_VERSION_2454="oct2026-2026-10-04-v1";
       const aliases=[e.firstName,String(e.fullName||'').split(/\s+/)[0],String(e.targetStaffName||'').split(/\s+/)[0]].filter(Boolean);
       const validPassword=aliases.some(firstName=>norm(pw)===norm(String(e.employeeId)+firstName));
       if(!validPassword)return fail('Incorrect password. Use Employee ID followed by first name.');
-      user={role:e.role,user:e.scopeUser,employeeId:String(e.employeeId),employeeName:e.fullName,employeeFirstName:e.firstName,targetStaffName:e.targetStaffName||e.fullName,jobTitle:e.jobTitle,scopeLabel:e.scopeLabel};
+      const enterpriseProfile=['RM','Admin / HO','CEO','Business Head'].includes(e.role);
+      user={role:e.role,user:e.scopeUser,employeeId:String(e.employeeId),employeeName:e.fullName,employeeFirstName:e.firstName,targetStaffName:e.targetStaffName||e.fullName,jobTitle:e.jobTitle,scopeLabel:enterpriseProfile?'Enterprise · 69 Stores':e.scopeLabel};
     }
 
     CURRENT_USER=user;
