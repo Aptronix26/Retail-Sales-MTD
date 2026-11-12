@@ -52,7 +52,7 @@ test('sales achievement rows map one-to-one to all target staff rows',()=>{
 });
 
 test('sales dump follows the Sunday-to-Saturday quarter calendar',()=>{
-  assert.equal(sales.asOfDate,'2026-11-10');
+  assert.equal(sales.asOfDate,'2026-11-11');
   assert.deepEqual(JSON.parse(JSON.stringify(sales.weekRanges.W1)),{start:'2026-09-27',end:'2026-10-03',isComplete:true});
   assert.deepEqual(JSON.parse(JSON.stringify(sales.weekRanges.W6)),{start:'2026-11-01',end:'2026-11-07',isComplete:true});
   assert.deepEqual(JSON.parse(JSON.stringify(sales.weekRanges.W7)),{start:'2026-11-08',end:'2026-11-14',isComplete:false});
@@ -93,12 +93,12 @@ test('weekly workspace renders current-week target and achievement values',()=>{
   vm.createContext(uiContext);
   vm.runInContext(fs.readFileSync(new URL('./weekly-targets-ui.js',import.meta.url),'utf8'),uiContext);
   assert.equal(elements.get('weeklyTargetWeek').value,'W7');
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/Through 10 Nov/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/1,037 \/ 3,432/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/243 \/ 707/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/191 \/ 434/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/119 \/ 379/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/240 \/ 642/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/Through 11 Nov/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/1,314 \/ 3,432/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/305 \/ 707/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/235 \/ 434/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/152 \/ 379/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/305 \/ 642/);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Target</);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Achieved</);
 

@@ -63,7 +63,7 @@ test('every employee and sales staff ID maps to a valid non-empty login scope',(
 
 test('every login scope reconciles W7 LOB actuals across product and commercial sources',()=>{
   for(const account of allAccounts)assert.deepEqual(productActual(accountStores(account)),commercialActual(accountStores(account)),`${account.employeeId} ${account.fullName} has inconsistent W7 totals`);
-  assert.deepEqual(productActual(stores),{iPhone:1037,Mac:243,iPad:191,Watch:119,AirPods:240});
+  assert.deepEqual(productActual(stores),{iPhone:1314,Mac:305,iPad:235,Watch:152,AirPods:305});
 });
 
 test('every hierarchy store exists in targets, commercial and product actuals',()=>{
@@ -78,11 +78,11 @@ test('every hierarchy store exists in targets, commercial and product actuals',(
 });
 
 test('business navigation is forced visible and stale monthly input grid is hidden',()=>{
-  assert.ok(html.includes("['dashboard','commercial','product','input','mission','trajectory','gpt','rhythm'].includes(item.dataset.page)"));
-  assert.ok(html.includes("const networkWide=['RM','Admin / HO','CEO','Business Head'].includes(CURRENT_USER.role);"));
-  assert.ok(html.includes("scopeLabel:enterpriseProfile?'Enterprise · 69 Stores':e.scopeLabel"));
-  assert.ok(!html.includes('setTimeout(renderAll,100)'));
-  assert.ok(html.includes('loggedInScope:scope,sideScope:scope'));
+  assert.match(html,/\['dashboard','commercial','product','input','mission','trajectory','gpt','rhythm'\]\.includes\(item\.dataset\.page\)/);
+  assert.match(html,/const networkWide=\['RM','Admin \/ HO','CEO','Business Head'\]\.includes\(CURRENT_USER\.role\)/);
+  assert.match(html,/scopeLabel:enterpriseProfile\?'Enterprise · 69 Stores':e\.scopeLabel/);
+  assert.doesNotMatch(html,/setTimeout\(renderAll,100\)/);
+  assert.match(html,/loggedInScope:scope,sideScope:scope/);
   const css=fs.readFileSync(new URL('./weekly-targets.css',import.meta.url),'utf8');
-  assert.ok(css.includes('#input>.legacyInputLabel,#input>.alignedInputTable,#input>.inputHelp{display:none!important}'));
+  assert.match(css,/#input>\.legacyInputLabel,#input>\.alignedInputTable,#input>\.inputHelp\{display:none!important\}/);
 });
