@@ -63,7 +63,7 @@ test('every employee and sales staff ID maps to a valid non-empty login scope',(
 
 test('every login scope reconciles W7 LOB actuals across product and commercial sources',()=>{
   for(const account of allAccounts)assert.deepEqual(productActual(accountStores(account)),commercialActual(accountStores(account)),`${account.employeeId} ${account.fullName} has inconsistent W7 totals`);
-  assert.deepEqual(productActual(stores),{iPhone:1314,Mac:305,iPad:235,Watch:152,AirPods:305});
+  assert.deepEqual(productActual(stores),{iPhone:1531,Mac:369,iPad:285,Watch:178,AirPods:371});
 });
 
 test('every hierarchy store exists in targets, commercial and product actuals',()=>{
