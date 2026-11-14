@@ -195,13 +195,20 @@
   }
 
   function renderGovernance(model){
+    const sourceTotal=sum(Object.values(SALES.sourceCoreByWeek||{}).flatMap(week=>LOBS.map(lob=>week?.[lob])));
+    const matchedTotal=sum(Object.values(SALES.matchedCoreByWeek||{}).flatMap(week=>LOBS.map(lob=>week?.[lob])));
+    const staffCoverage=sourceTotal?matchedTotal/sourceTotal*100:100;
+    const sourceCurrent=sum(LOBS.map(lob=>SALES.sourceCoreByWeek?.[model.week]?.[lob]));
+    const matchedCurrent=sum(LOBS.map(lob=>SALES.matchedCoreByWeek?.[model.week]?.[lob]));
+    const currentCoverage=sourceCurrent?matchedCurrent/sourceCurrent*100:100;
+    const publishPassed=model.stores.size===69&&staffCoverage>=95&&(SALES.mappingIssues||[]).length===0;
     const source=document.querySelector('.governance-source');if(source)source.textContent='Weekly Sales Intelligence';
     const facts=document.querySelector('.governance-facts');
     if(facts)facts.innerHTML=`<span><b>Through</b> ${esc(model.through)} 2026</span><span><b>Coverage</b> ${model.stores.size} stores · 5 separate LOB views</span><span><b>Published</b> 14 Nov 2026</span>`;
     const statusNode=document.querySelector('.governance-status');
-    if(statusNode)statusNode.innerHTML='<span class="governance-dot"></span>Validation Passed<small>19 checks</small>';
+    if(statusNode){statusNode.classList.toggle('governance-status--pass',publishPassed);statusNode.classList.toggle('governance-status--fail',!publishPassed);statusNode.innerHTML=`<span class="governance-dot"></span>${publishPassed?'Validation Passed':'Publication Blocked'}<small>26 checks · ${pct(staffCoverage)} staff mapped</small>`;}
     const panel=document.querySelector('.governance-panel');
-    if(panel)panel.innerHTML=`<strong>Automated reconciliation</strong><div class="governance-check governance-check--pass"><span></span><div><b>Target hierarchy</b><small>15 ARMs · 69 stores · 313 target staff rows</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Current week</b><small>${esc(model.week)} · ${esc(model.label)} · through ${esc(model.through)}</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>LOB presentation</b><small>iPhone, Mac, iPad, Watch and AirPods shown separately</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Commercial source</b><small>Invoice sales, loan, trade-in and AppleCare fields; footfall excluded</small></div></div>`;
+    if(panel)panel.innerHTML=`<strong>Automated reconciliation and publish gate</strong><div class="governance-check governance-check--pass"><span></span><div><b>Network coverage</b><small>15 ARMs · ${model.stores.size} of 69 stores · 313 target staff rows</small></div></div><div class="governance-check ${staffCoverage>=95?'governance-check--pass':'governance-check--fail'}"><span></span><div><b>Quarter staff attribution</b><small>${pct(staffCoverage)} · ${fmt(matchedTotal)} of ${fmt(sourceTotal)} core units mapped · minimum 95%</small></div></div><div class="governance-check ${currentCoverage>=95?'governance-check--pass':'governance-check--warning'}"><span></span><div><b>Current-week attribution</b><small>${pct(currentCoverage)} · ${fmt(matchedCurrent)} of ${fmt(sourceCurrent)} core units mapped</small></div></div><div class="governance-check ${(SALES.unmappedExecutives||[]).length?'governance-check--warning':'governance-check--pass'}"><span></span><div><b>Source assignments requiring review</b><small>${fmt((SALES.unmappedExecutives||[]).length)} identities · visible in Target &amp; Achievement</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Current week</b><small>${esc(model.week)} · ${esc(model.label)} · through ${esc(model.through)}</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>LOB and commercial source</b><small>Five LOBs shown separately; invoice sales, loan, trade-in and AppleCare fields validated</small></div></div>`;
   }
 
   function renderMission(model){
