@@ -3,6 +3,7 @@
 
   const SALES=window.WEEKLY_STAFF_ACHIEVEMENTS;
   const TARGETS=window.WEEKLY_STAFF_TARGETS;
+  const STAFF=window.STAFF_MASTER_META||{};
   if(!SALES||!TARGETS)return;
 
   const LOBS=Array.from(TARGETS.lobOrder||['iPhone','Mac','iPad','Watch','AirPods']);
@@ -59,6 +60,7 @@
     const exportButton=document.getElementById('dqExport');
     if(summary)summary.innerHTML=`
       <div class="dqMetric dqMetric--good"><span>Network store coverage</span><b>${allowed.size?`${allowed.size} / ${allowed.size}`:'—'}</b><small>${allowed.size?'All permitted stores represented':'Sign in to view your permitted scope'}</small></div>
+      <div class="dqMetric ${num(STAFF.pendingEmployees)?'dqMetric--review':'dqMetric--good'}"><span>Staff master mapping</span><b>${STAFF.mappedEmployees?`${fmt(STAFF.mappedEmployees)} / ${fmt(STAFF.sourceRows)}`:'—'}</b><small>${STAFF.pendingEmployees?`${fmt(STAFF.pendingEmployees)} records need hierarchy confirmation`:'All current employees mapped'}</small></div>
       <div class="dqMetric ${coverage>=95?'dqMetric--good':'dqMetric--risk'}"><span>Staff attribution</span><b>${pct(coverage)}</b><small>${fmt(matchedTotal)} of ${fmt(sourceTotal)} core units</small></div>
       <div class="dqMetric ${rows.length?'dqMetric--review':'dqMetric--good'}"><span>Assignments to review</span><b>${fmt(rows.length)}</b><small>${fmt(unresolvedUnits)} units in the current view</small></div>
       <div class="dqMetric dqMetric--good"><span>Publish gate</span><b>${coverage>=95?'Passed':'Blocked'}</b><small>Minimum staff attribution: 95%</small></div>`;

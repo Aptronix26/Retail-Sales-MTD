@@ -47,9 +47,13 @@ function commercialActual(scope,week='W7'){
 
 test('every employee and sales staff ID maps to a valid non-empty login scope',()=>{
   assert.equal(stores.length,69);
-  assert.equal(employees.length,158);
-  assert.equal(staffAccounts.length,242);
-  assert.equal(allAccounts.length,402);
+  assert.equal(employees.length,390);
+  assert.equal(staffAccounts.length,22);
+  assert.equal(allAccounts.length,414);
+  assert.deepEqual(Object.fromEntries([...new Set(employees.map(row=>row.role))].sort().map(role=>[role,employees.filter(row=>row.role===role).length])),{
+    'ARM':15,'Admin / HO':1,'RM':2,'Staff':228,'Store Manager':144
+  });
+  assert.equal(new Set(employees.filter(row=>['Store Manager','Staff'].includes(row.role)).map(row=>row.scopeUser)).size,69);
   assert.equal(new Set(allAccounts.map(row=>String(row.employeeId))).size,allAccounts.length);
   for(const account of allAccounts){
     assert.ok(account.employeeId&&account.firstName,`Missing credentials for ${account.fullName}`);
@@ -59,6 +63,13 @@ test('every employee and sales staff ID maps to a valid non-empty login scope',(
     if(account.role==='ARM')assert.ok(scope.every(row=>row.arm===account.scopeUser),`${account.employeeId} crosses ARM scope`);
     if(enterpriseRoles.has(account.role))assert.equal(scope.length,69,`${account.employeeId} must have enterprise scope`);
   }
+});
+
+test('staff-master target names reference an existing target row in the same store',()=>{
+  const targetKeys=new Set(targets.arms.flatMap(arm=>arm.stores.flatMap(store=>store.staff.map(staff=>`${store.store}\u241f${staff.name}`))));
+  const linked=employees.filter(row=>row.targetStaffName);
+  assert.equal(linked.length,246);
+  for(const employee of linked)assert.ok(targetKeys.has(`${employee.scopeUser}\u241f${employee.targetStaffName}`),`${employee.employeeId} ${employee.fullName} has an invalid target mapping`);
 });
 
 test('every login scope reconciles W7 LOB actuals across product and commercial sources',()=>{
