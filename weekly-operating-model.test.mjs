@@ -23,6 +23,15 @@ test('current weekly target and staff-attributed achievement reconcile',()=>{
   assert.equal(actual,3626);
 });
 
+test('week boundaries support automatic Sunday rollover',()=>{
+  const weekFor=date=>targets.weeks.find(week=>{
+    const range=sales.weekRanges[week];
+    return date>=range.start&&date<=range.end;
+  });
+  assert.equal(weekFor('2026-11-14'),'W7');
+  assert.equal(weekFor('2026-11-15'),'W8');
+});
+
 test('weekly commercial source covers all stores and uses invoice fields',()=>{
   const rows=sales.commercialByStoreWeek.filter(row=>row.week==='W7');
   assert.equal(rows.length,69);
@@ -73,6 +82,12 @@ test('weekly UI labels loan and trade-in attach and excludes footfall calculatio
   assert.match(source,/commercialRankIndex/);
   assert.match(source,/<em> units<\/em>/);
   assert.doesNotMatch(source,/footfall\s*\//i);
+  assert.match(source,/function renderExceptions/);
+  assert.match(source,/operatingExceptions/);
+  assert.match(source,/What needs action first/);
+  assert.match(source,/Upload validation/);
+  assert.match(source,/activates automatically/);
+  assert.match(source,/Sales through/);
   const targetUi=fs.readFileSync(new URL('./weekly-targets-ui.js',import.meta.url),'utf8');
   assert.match(targetUi,/SALES\?\.productByStoreWeek/);
   assert.match(targetUi,/Network, ARM and store totals include every valid source invoice/);

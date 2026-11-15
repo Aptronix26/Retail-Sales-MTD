@@ -119,6 +119,34 @@
     return `${model.stores.size} stores`;
   }
 
+  function publicationLabel(){
+    const value=SALES.version||SALES.asOfDate;
+    const date=value?new Date(`${value}T00:00:00`):null;
+    return date&&!Number.isNaN(date.getTime())?date.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'Current build';
+  }
+
+  function renderExceptions(model){
+    const page=q('page-dashboard');const brief=q('businessBrief');
+    if(!page||!brief)return;
+    let section=q('operatingExceptions');
+    if(!section){section=document.createElement('section');section.id='operatingExceptions';section.className='operatingExceptions';brief.insertAdjacentElement('beforebegin',section);}
+    const storeSignals=model.byStore.flatMap(store=>LOBS.map(lob=>{const row=store.byLob[lob];const target=num(row.target);const actual=num(row.actual);return {kind:'LOB gap',store:store.store,lob,target,actual,gap:Math.max(0,target-actual),rate:target?actual/target*100:0};})).filter(row=>row.target>0&&row.gap>0).sort((a,b)=>b.gap-a.gap||a.rate-b.rate);
+    const commercial=(SALES.commercialByStoreWeek||[]).filter(row=>row.week===model.week&&model.stores.has(row.store));
+    const leverSignals=commercial.flatMap(row=>{
+      const units=num(row.lobUnits?.iPhone);if(!units)return [];
+      const trade=num(row.tradeInByLob?.iPhone)/units*100;const loan=num(row.financeByLob?.iPhone)/units*100;
+      return [
+        trade<20?{kind:'Trade-in',store:row.store,lob:'iPhone',rate:trade,benchmark:20,gap:20-trade}:null,
+        loan<25?{kind:'Loan',store:row.store,lob:'iPhone',rate:loan,benchmark:25,gap:25-loan}:null,
+      ].filter(Boolean);
+    }).sort((a,b)=>b.gap-a.gap);
+    const exceptions=[...storeSignals.slice(0,4),...leverSignals.slice(0,2)];
+    const range=SALES.weekRanges?.[model.week]||{};const weekIndex=WEEKS.indexOf(model.week);const nextWeek=WEEKS[weekIndex+1];
+    const rollover=range.isComplete?(nextWeek?`${model.week} closed · ${nextWeek} activates automatically with the first dated sale in its range`:`${model.week} closed`):`${model.week} active · ${model.remaining} day${model.remaining===1?'':'s'} remaining`;
+    const qa=SALES.sourceValidation||{};
+    section.innerHTML=`<div class="operatingExceptionsHead"><div><span>PRIORITY EXCEPTIONS</span><h2>What needs action first</h2><p>Largest store × LOB target gaps and iPhone commercial-lever exceptions in the selected scope.</p></div><div class="operatingFreshness"><b>Sales through ${esc(model.through)} · Uploaded ${esc(publicationLabel())}</b><small>${esc(model.week)} · ${range.isComplete?'Complete':'In progress'} · ${fmt(model.stores.size)} stores</small></div></div><div class="operatingExceptionsGrid">${exceptions.map((row,index)=>row.kind==='LOB gap'?`<article><span>${index+1} · ${esc(row.kind)}</span><b>${esc(row.store.replace(/^Aptronix\s+/i,''))} · ${esc(row.lob)}</b><strong>${fmt(row.gap)} units short</strong><small>${fmt(row.actual)} / ${fmt(row.target)} · ${pct(row.rate)}</small></article>`:`<article class="commercialException"><span>${index+1} · ${esc(row.kind)} attach</span><b>${esc(row.store.replace(/^Aptronix\s+/i,''))} · iPhone</b><strong>${pct(row.rate)}</strong><small>Below ${pct(row.benchmark)} benchmark by ${pct(row.gap)} points</small></article>`).join('')}</div><div class="operatingAssurance"><span class="${qa.status==='passed'?'pass':'fail'}">Upload validation: ${qa.status==='passed'?'Passed':'Blocked'}</span><span>Auto rollover: ${esc(rollover)}</span><span>Scope: ${esc(scopeLabel(model))}</span></div>`;
+  }
+
   function updateStaticCopy(model){
     const label=`${model.week} · ${model.label}`;
     const top=document.querySelector('.topbar .title');
@@ -144,6 +172,7 @@
 
   function renderDashboard(model){
     updateStaticCopy(model);
+    renderExceptions(model);
     const rows=lobRows(model);const weak=[...rows].sort((a,b)=>a.achievement-b.achievement||b.gap-a.gap);
     const cards=Array.from(document.querySelectorAll('#page-dashboard .executiveKpi'));
     cards.forEach((card,index)=>{
@@ -203,14 +232,15 @@
     const currentCoverage=sourceCurrent?matchedCurrent/sourceCurrent*100:100;
     const networkStoreCount=new Set((window.STORE_MAP||[]).map(row=>row.store)).size;
     const staffMaster=window.STAFF_MASTER_META||{};
-    const publishPassed=networkStoreCount===69&&staffCoverage>=95&&(SALES.mappingIssues||[]).length===0;
+    const sourceValidation=SALES.sourceValidation||{};
+    const publishPassed=networkStoreCount===69&&staffCoverage>=95&&(SALES.mappingIssues||[]).length===0&&sourceValidation.status==='passed';
     const source=document.querySelector('.governance-source');if(source)source.textContent='Weekly Sales Intelligence';
     const facts=document.querySelector('.governance-facts');
-    if(facts)facts.innerHTML=`<span><b>Through</b> ${esc(model.through)} 2026</span><span><b>Coverage</b> ${model.stores.size} stores · 5 separate LOB views</span><span><b>Published</b> 15 Nov 2026</span>`;
+    if(facts)facts.innerHTML=`<span><b>Sales through</b> ${esc(model.through)} 2026</span><span><b>Week</b> ${esc(model.week)} · ${SALES.weekRanges?.[model.week]?.isComplete?'Complete':'In progress'}</span><span><b>Coverage</b> ${model.stores.size} stores · 5 separate LOB views</span><span><b>Uploaded</b> ${esc(publicationLabel())}</span>`;
     const statusNode=document.querySelector('.governance-status');
-    if(statusNode){statusNode.classList.toggle('governance-status--pass',publishPassed);statusNode.classList.toggle('governance-status--fail',!publishPassed);statusNode.innerHTML=`<span class="governance-dot"></span>${publishPassed?'Validation Passed':'Publication Blocked'}<small>27 checks · ${pct(staffCoverage)} staff mapped</small>`;}
+    if(statusNode){statusNode.classList.toggle('governance-status--pass',publishPassed);statusNode.classList.toggle('governance-status--fail',!publishPassed);statusNode.innerHTML=`<span class="governance-dot"></span>${publishPassed?'Validation Passed':'Publication Blocked'}<small>Source + access checks · ${pct(staffCoverage)} staff mapped</small>`;}
     const panel=document.querySelector('.governance-panel');
-    if(panel)panel.innerHTML=`<strong>Automated reconciliation and publish gate</strong><div class="governance-check governance-check--pass"><span></span><div><b>Network coverage</b><small>15 ARMs · ${networkStoreCount} of 69 stores · 313 target staff rows</small></div></div><div class="governance-check ${staffMaster.pendingEmployees?'governance-check--warning':'governance-check--pass'}"><span></span><div><b>Staff-master hierarchy</b><small>${fmt(staffMaster.mappedEmployees||0)} of ${fmt(staffMaster.sourceRows||0)} current records mapped · ${fmt(staffMaster.pendingEmployees||0)} need confirmation</small></div></div><div class="governance-check ${staffCoverage>=95?'governance-check--pass':'governance-check--fail'}"><span></span><div><b>Quarter staff attribution</b><small>${pct(staffCoverage)} · ${fmt(matchedTotal)} of ${fmt(sourceTotal)} core units mapped · minimum 95%</small></div></div><div class="governance-check ${currentCoverage>=95?'governance-check--pass':'governance-check--warning'}"><span></span><div><b>Current-week attribution</b><small>${pct(currentCoverage)} · ${fmt(matchedCurrent)} of ${fmt(sourceCurrent)} core units mapped</small></div></div><div class="governance-check ${(SALES.unmappedExecutives||[]).length?'governance-check--warning':'governance-check--pass'}"><span></span><div><b>Source assignments requiring review</b><small>${fmt((SALES.unmappedExecutives||[]).length)} identities · visible in Target &amp; Achievement</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Current week</b><small>${esc(model.week)} · ${esc(model.label)} · through ${esc(model.through)}</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>LOB and commercial source</b><small>Five LOBs shown separately; invoice sales, loan, trade-in and AppleCare fields validated</small></div></div>`;
+    if(panel)panel.innerHTML=`<strong>Automated reconciliation and publish gate</strong><div class="governance-check ${sourceValidation.status==='passed'?'governance-check--pass':'governance-check--fail'}"><span></span><div><b>Upload validation</b><small>${sourceValidation.status==='passed'?`No date overlap · ${fmt(sourceValidation.exactDuplicateRows)} exact duplicates · ${pct(sourceValidation.returnRate)} returns`:(sourceValidation.criticalIssues||[]).join(' · ')}</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Network coverage</b><small>15 ARMs · ${networkStoreCount} of 69 stores · 313 target staff rows</small></div></div><div class="governance-check ${staffMaster.pendingEmployees?'governance-check--warning':'governance-check--pass'}"><span></span><div><b>Staff-master hierarchy</b><small>${fmt(staffMaster.mappedEmployees||0)} of ${fmt(staffMaster.sourceRows||0)} current records mapped · ${fmt(staffMaster.pendingEmployees||0)} need confirmation</small></div></div><div class="governance-check ${staffCoverage>=95?'governance-check--pass':'governance-check--fail'}"><span></span><div><b>Quarter staff attribution</b><small>${pct(staffCoverage)} · ${fmt(matchedTotal)} of ${fmt(sourceTotal)} core units mapped · minimum 95%</small></div></div><div class="governance-check ${currentCoverage>=95?'governance-check--pass':'governance-check--warning'}"><span></span><div><b>Current-week attribution</b><small>${pct(currentCoverage)} · ${fmt(matchedCurrent)} of ${fmt(sourceCurrent)} core units mapped</small></div></div><div class="governance-check ${(SALES.unmappedExecutives||[]).length?'governance-check--warning':'governance-check--pass'}"><span></span><div><b>Source assignments requiring review</b><small>${fmt((SALES.unmappedExecutives||[]).length)} identities · visible in Target &amp; Achievement</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>Current week</b><small>${esc(model.week)} · ${esc(model.label)} · through ${esc(model.through)} · ${SALES.weekRanges?.[model.week]?.isComplete?'complete':'in progress'}</small></div></div><div class="governance-check governance-check--pass"><span></span><div><b>LOB and commercial source</b><small>Five LOBs shown separately; invoice sales, loan, trade-in and AppleCare fields validated</small></div></div>`;
   }
 
   function renderMission(model){

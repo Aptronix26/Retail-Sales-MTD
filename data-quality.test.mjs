@@ -19,6 +19,21 @@ test('publication gate protects network coverage and staff attribution',()=>{
   assert.ok(matched/source>=0.95,`Staff attribution ${(matched/source*100).toFixed(2)}% is below the 95% publish threshold`);
   assert.equal(targets.storeTargets.length,69);
   assert.equal(sales.mappingIssues.length,0);
+  assert.equal(sales.sourceValidation.status,'passed');
+  assert.deepEqual(Array.from(sales.sourceValidation.criticalIssues),[]);
+});
+
+test('source upload passes continuity, overlap, duplicate, identity and coverage checks',()=>{
+  const qa=sales.sourceValidation;
+  assert.equal(qa.dateStart,'2026-09-27');
+  assert.equal(qa.dateEnd,sales.asOfDate);
+  assert.deepEqual(Array.from(qa.missingDates),[]);
+  assert.deepEqual(Array.from(qa.overlapDates),[]);
+  assert.equal(qa.exactDuplicateRows,0);
+  assert.equal(qa.missingExecutiveRows,0);
+  assert.equal(qa.latestWeekStores,qa.targetStores);
+  assert.ok(qa.sourceRows>0);
+  assert.ok(qa.returnRate<15);
 });
 
 test('unmapped assignment queue reconciles to all unattributed core units',()=>{
@@ -42,5 +57,10 @@ test('data-quality review is scope-aware, filterable and exportable',()=>{
   assert.match(source,/WEEKLY_TARGET_SCOPE_API/);
   for(const id of ['dqStore','dqLob','dqSearch','dqExport','dqRows'])assert.match(source,new RegExp(id));
   assert.match(source,/unmapped-sales-review-/);
-  assert.match(source,/Minimum staff attribution: 95%/);
+  assert.match(source,/minimum 95% staff attribution/i);
+  assert.match(source,/function sourceHealth/);
+  assert.match(source,/function loginHealth/);
+  assert.match(source,/Upload validation/);
+  assert.match(source,/Login scope health/);
+  assert.match(source,/dqAssuranceDetails/);
 });
