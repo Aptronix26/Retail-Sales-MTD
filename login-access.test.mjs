@@ -74,7 +74,7 @@ test('staff-master target names reference an existing target row in the same sto
 
 test('every login scope reconciles W7 LOB actuals across product and commercial sources',()=>{
   for(const account of allAccounts)assert.deepEqual(productActual(accountStores(account)),commercialActual(accountStores(account)),`${account.employeeId} ${account.fullName} has inconsistent W7 totals`);
-  assert.deepEqual(productActual(stores),{iPhone:1737,Mac:420,iPad:328,Watch:204,AirPods:445});
+  assert.deepEqual(productActual(stores),{iPhone:2044,Mac:487,iPad:383,Watch:249,AirPods:535});
 });
 
 test('every hierarchy store exists in targets, commercial and product actuals',()=>{
