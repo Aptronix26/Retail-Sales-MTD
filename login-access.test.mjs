@@ -32,13 +32,13 @@ function accountStores(account){
   if(['Store Manager','Staff'].includes(account.role))return stores.filter(row=>row.store===account.scopeUser);
   return [];
 }
-function productActual(scope,week='W7'){
+function productActual(scope,week='W8'){
   const allowed=new Set(scope.map(row=>row.store));
   const out=Object.fromEntries(lobs.map(lob=>[lob,0]));
   for(const row of sales.productByStoreWeek||[])if(row.week===week&&allowed.has(row.store)&&lobs.includes(row.lob))out[row.lob]+=Number(row.units||0);
   return out;
 }
-function commercialActual(scope,week='W7'){
+function commercialActual(scope,week='W8'){
   const allowed=new Set(scope.map(row=>row.store));
   const out=Object.fromEntries(lobs.map(lob=>[lob,0]));
   for(const row of sales.commercialByStoreWeek||[])if(row.week===week&&allowed.has(row.store))for(const lob of lobs)out[lob]+=Number(row.lobUnits?.[lob]||0);
@@ -72,9 +72,9 @@ test('staff-master target names reference an existing target row in the same sto
   for(const employee of linked)assert.ok(targetKeys.has(`${employee.scopeUser}\u241f${employee.targetStaffName}`),`${employee.employeeId} ${employee.fullName} has an invalid target mapping`);
 });
 
-test('every login scope reconciles W7 LOB actuals across product and commercial sources',()=>{
-  for(const account of allAccounts)assert.deepEqual(productActual(accountStores(account)),commercialActual(accountStores(account)),`${account.employeeId} ${account.fullName} has inconsistent W7 totals`);
-  assert.deepEqual(productActual(stores),{iPhone:2044,Mac:487,iPad:383,Watch:249,AirPods:535});
+test('every login scope reconciles current-week LOB actuals across product and commercial sources',()=>{
+  for(const account of allAccounts)assert.deepEqual(productActual(accountStores(account)),commercialActual(accountStores(account)),`${account.employeeId} ${account.fullName} has inconsistent current-week totals`);
+  assert.deepEqual(productActual(stores),{iPhone:276,Mac:63,iPad:49,Watch:38,AirPods:90});
 });
 
 test('every hierarchy store exists in targets, commercial and product actuals',()=>{
