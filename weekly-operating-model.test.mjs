@@ -87,7 +87,7 @@ test('weekly UI labels loan and trade-in attach and excludes footfall calculatio
   assert.match(source,/What needs action first/);
   assert.match(source,/Weekly operating view/);
   assert.match(source,/LOB target and achievement/);
-  assert.match(source,/Units achieved/);
+  assert.match(source,/Priority LOB/);
   assert.match(source,/Store exceptions/);
   assert.match(source,/simplifiedDashboard/);
   assert.match(source,/Upload validation/);
@@ -125,6 +125,10 @@ test('weekly UI labels loan and trade-in attach and excludes footfall calculatio
   assert.doesNotMatch(productUi,/rows\.slice\(0,10\)/);
   assert.match(productUi,/priorWeek=weeks\[weeks\.length-2\]/);
   assert.match(productUi,/Change vs last week/);
+  assert.match(productUi,/LOBs in scope/);
+  assert.doesNotMatch(productUi,/Total · full filtered result/);
+  assert.match(productUi,/const totalLobs=allLobs/);
+  assert.match(productUi,/<th>LOB<\/th><th>Store/);
   const html=fs.readFileSync(new URL('./index.html',import.meta.url),'utf8');
   assert.match(html,/data-page="product"/);
   assert.match(html,/BUSINESS_PAGES=\[[^\]]*'product'/);

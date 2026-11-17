@@ -110,14 +110,16 @@
     const store=value('productStore');
     const arm=value('productArm');
     const base=enrichedRows().filter(row=>(period==='QTD'||row.week===period)&&selected(row.lob,lob)&&selected(row.subLob,subLob)&&selected(row.rm,rm)&&selected(row.location,location)&&selected(row.store,store));
+    const splitByLob=lob==='All';
     const arms=new Map();
     for(const row of base){
-      const key=`${row.week}\u241f${row.arm||'Unmapped ARM'}`;
-      const current=arms.get(key)||{week:row.week,arm:row.arm||'Unmapped ARM',units:0};
+      const rowLob=splitByLob?row.lob:lob;
+      const key=`${row.week}\u241f${rowLob}\u241f${row.arm||'Unmapped ARM'}`;
+      const current=arms.get(key)||{week:row.week,lob:rowLob,arm:row.arm||'Unmapped ARM',units:0};
       current.units+=num(row.units);
       arms.set(key,current);
     }
-    return [...arms.values()].filter(row=>selected(row.arm,arm)).sort((a,b)=>Number(a.week.slice(1))-Number(b.week.slice(1))||b.units-a.units||a.arm.localeCompare(b.arm));
+    return [...arms.values()].filter(row=>selected(row.arm,arm)).sort((a,b)=>Number(a.week.slice(1))-Number(b.week.slice(1))||LOBS.indexOf(a.lob)-LOBS.indexOf(b.lob)||b.units-a.units||a.arm.localeCompare(b.arm));
   }
 
   function contributionScopeLabel(){
@@ -136,21 +138,23 @@
     const label=contributionScopeLabel();
     const scope=document.getElementById('productContributionScope');
     if(scope)scope.textContent=`${label} weekly units`;
-    const byKey=new Map(rows.map(row=>[`${row.arm}\u241f${row.week}`,row]));
+    const splitByLob=value('productLob')==='All';
+    const byKey=new Map(rows.map(row=>[`${row.lob}\u241f${row.arm}\u241f${row.week}`,row]));
     const latestWeek=weeks[weeks.length-1];
-    const arms=[...new Set(rows.map(row=>row.arm))].sort((a,b)=>num(byKey.get(`${b}\u241f${latestWeek}`)?.units)-num(byKey.get(`${a}\u241f${latestWeek}`)?.units)||a.localeCompare(b));
+    const rowKeys=[...new Set(rows.map(row=>`${row.lob}\u241f${row.arm}`))].sort((a,b)=>{const [lobA,armA]=a.split('\u241f');const [lobB,armB]=b.split('\u241f');return LOBS.indexOf(lobA)-LOBS.indexOf(lobB)||num(byKey.get(`${lobB}\u241f${armB}\u241f${latestWeek}`)?.units)-num(byKey.get(`${lobA}\u241f${armA}\u241f${latestWeek}`)?.units)||armA.localeCompare(armB);});
     const maxUnits=Math.max(...rows.map(row=>num(row.units)),1);
-    const leader=byKey.get(`${arms[0]}\u241f${latestWeek}`);
+    const leader=[...rows].filter(row=>row.week===latestWeek).sort((a,b)=>b.units-a.units)[0];
     const priorWeek=weeks[weeks.length-2];
-    const priorForLeader=byKey.get(`${arms[0]}\u241f${priorWeek}`);
+    const priorForLeader=byKey.get(`${leader?.lob}\u241f${leader?.arm}\u241f${priorWeek}`);
     const delta=num(leader?.units)-num(priorForLeader?.units);
-    summary.innerHTML=`<div><span>${esc(weekLabel(latestWeek))} leader</span><b>${esc(leader?.arm||'—')}</b></div><div><span>${esc(label)} units</span><b>${fmt(leader?.units)}</b><small>absolute units sold</small></div>${weeks.length>1?`<div><span>Change vs last week · ${esc(weekLabel(priorWeek))}</span><b class="${delta>=0?'positive':'negative'}">${delta>=0?'+':''}${fmt(delta)} units</b></div>`:''}`;
-    const weekTotals=new Map(weeks.map(week=>[week,rows.filter(row=>row.week===week).reduce((total,row)=>total+num(row.units),0)]));
-    matrix.innerHTML=`<table><thead><tr><th>ARM</th>${weeks.map(week=>`<th>${esc(weekLabel(week))}</th>`).join('')}</tr></thead><tbody>${arms.map(arm=>`<tr><th>${esc(arm)}</th>${weeks.map(week=>{
-      const row=byKey.get(`${arm}\u241f${week}`);if(!row)return '<td><span class="productNoValue">—</span></td>';
+    summary.innerHTML=`<div><span>${esc(weekLabel(latestWeek))} leader</span><b>${esc(splitByLob?`${leader?.lob||'—'} · ${leader?.arm||'—'}`:leader?.arm||'—')}</b></div><div><span>${esc(label)} units</span><b>${fmt(leader?.units)}</b><small>absolute units sold</small></div>${weeks.length>1?`<div><span>Change vs last week · ${esc(weekLabel(priorWeek))}</span><b class="${delta>=0?'positive':'negative'}">${delta>=0?'+':''}${fmt(delta)} units</b></div>`:''}`;
+    const totalLobs=splitByLob?LOBS.filter(lob=>rows.some(row=>row.lob===lob)):[value('productLob')];
+    const totals=totalLobs.map(lob=>({lob,weeks:new Map(weeks.map(week=>[week,rows.filter(row=>row.lob===lob&&row.week===week).reduce((total,row)=>total+num(row.units),0)]))}));
+    matrix.innerHTML=`<table><thead><tr>${splitByLob?'<th>LOB</th>':''}<th>ARM</th>${weeks.map(week=>`<th>${esc(weekLabel(week))}</th>`).join('')}</tr></thead><tbody>${rowKeys.map(key=>{const [lob,arm]=key.split('\u241f');return `<tr>${splitByLob?`<th>${esc(lob)}</th>`:''}<th>${esc(arm)}</th>${weeks.map(week=>{
+      const row=byKey.get(`${lob}\u241f${arm}\u241f${week}`);if(!row)return '<td><span class="productNoValue">—</span></td>';
       const units=num(row.units);const intensity=.08+.48*(Math.max(0,units)/maxUnits);
-      return `<td><div class="productHeatCell" style="background:rgba(47,111,237,${intensity.toFixed(3)})" title="${esc(`${arm} · ${weekLabel(week)} · ${fmt(units)} units`)}"><b>${fmt(units)}</b><small>units</small></div></td>`;
-    }).join('')}</tr>`).join('')}<tr class="productTotalRow"><th>Total</th>${weeks.map(week=>`<td><b>${fmt(weekTotals.get(week))}</b><small>units</small></td>`).join('')}</tr></tbody></table>`;
+      return `<td><div class="productHeatCell" style="background:rgba(47,111,237,${intensity.toFixed(3)})" title="${esc(`${lob} · ${arm} · ${weekLabel(week)} · ${fmt(units)} units`)}"><b>${fmt(units)}</b><small>units</small></div></td>`;
+    }).join('')}</tr>`;}).join('')}${totals.map(total=>`<tr class="productTotalRow">${splitByLob?`<th>${esc(total.lob)}</th><th>Total</th>`:`<th>Total · ${esc(total.lob)}</th>`}${weeks.map(week=>`<td><b>${fmt(total.weeks.get(week))}</b><small>units</small></td>`).join('')}</tr>`).join('')}</tbody></table>`;
   }
 
   function organisationMixBenchmark(){
@@ -165,50 +169,53 @@
   function render(){
     const root=document.getElementById('productIntelligenceRoot');if(!root)return;
     const rows=filteredRows();activeRows=rows;
-    const units=sum(rows,'units');const revenue=sum(rows,'revenue');const gp=sum(rows,'grossProfit');
+    const revenue=sum(rows,'revenue');const gp=sum(rows,'grossProfit');
     const stores=new Set(rows.filter(row=>num(row.units)>0).map(row=>row.store)).size;
-    const baseUnits=sum(filteredRows(true),'units');const mix=baseUnits?units/baseUnits*100:0;
     const selectedLob=value('productLob');const selectedSub=value('productSubLob');const selectedStore=value('productStore');
+    const allLobs=selectedLob==='All';const units=allLobs?null:sum(rows,'units');
+    const baseUnits=allLobs?0:sum(filteredRows(true),'units');const mix=baseUnits?units/baseUnits*100:0;
+    const lobCount=new Set(rows.map(row=>row.lob)).size;
     const scope=[selectedLob==='All'?'All LOBs':selectedLob,selectedSub==='All'?'All sub-LOBs':productLabel(selectedSub),selectedStore==='All'?'All stores':cleanStore(selectedStore)].join(' · ');
     const period=value('productWeek');
     const periodText=period==='QTD'?`QTD · ${displayDate(SALES.weekRanges?.W1?.start||'2026-09-27')}–${displayDate(SALES.asOfDate)}`:`${weekLabel(period)} · ${displayDate(SALES.weekRanges?.[period]?.start||'')}–${displayDate(SALES.weekRanges?.[period]?.end||'')}`;
     document.getElementById('productScopeReadout').textContent=`${scope} · ${periodText}`;
     document.getElementById('productKpis').innerHTML=`
-      <div><span>Sales achievement</span><b>${fmt(units)} units</b><small>Net invoice quantity</small></div>
+      <div><span>${allLobs?'LOBs in scope':'Sales achievement'}</span><b>${allLobs?`${fmt(lobCount)} LOBs`:`${fmt(units)} units`}</b><small>${allLobs?'Units remain separated below':'Net invoice quantity'}</small></div>
       <div><span>Net revenue</span><b>${compactMoney(revenue)}</b><small>Selected product scope</small></div>
-      <div><span>Average selling price</span><b>${units?money(revenue/units):'—'}</b><small>Revenue ÷ units</small></div>
+      <div><span>Average selling price</span><b>${!allLobs&&units?money(revenue/units):'—'}</b><small>${allLobs?'Select one LOB for ASP':'Revenue ÷ units'}</small></div>
       <div><span>Stores selling</span><b>${fmt(stores)}</b><small>Positive unit sales</small></div>
       <div><span>Gross margin</span><b>${revenue?pct(gp/revenue*100):'—'}</b><small>${compactMoney(gp)} gross profit</small></div>
-      <div><span>Selected mix</span><b>${baseUnits?pct(mix):'—'}</b><small>Share within current LOB scope</small></div>`;
+      <div><span>Selected mix</span><b>${!allLobs&&baseUnits?pct(mix):'—'}</b><small>${allLobs?'Select one LOB for mix':'Share within current LOB scope'}</small></div>`;
 
-    document.getElementById('productSubLobBars').innerHTML=bars(group(rows,row=>row.subLob),'No sub-LOB sales match this selection.');
-    document.getElementById('productArmBars').innerHTML=bars(group(rows,row=>row.arm||'Unmapped ARM'),'No ARM sales match this selection.');
-    document.getElementById('productLocationBars').innerHTML=bars(group(rows,row=>row.location||'Unmapped'),'No location sales match this selection.');
+    document.getElementById('productSubLobBars').innerHTML=bars(group(rows,row=>allLobs?`${row.lob} · ${row.subLob}`:row.subLob),'No sub-LOB sales match this selection.');
+    document.getElementById('productArmBars').innerHTML=bars(group(rows,row=>allLobs?`${row.lob} · ${row.arm||'Unmapped ARM'}`:row.arm||'Unmapped ARM'),'No ARM sales match this selection.');
+    document.getElementById('productLocationBars').innerHTML=bars(group(rows,row=>allLobs?`${row.lob} · ${row.location||'Unmapped'}`:row.location||'Unmapped'),'No location sales match this selection.');
 
     renderContributionMatrix();
 
     const benchmark=organisationMixBenchmark();
-    const baseStoreRows=filteredRows(true);const selectedByStore=new Map(group(rows,row=>row.store).map(row=>[row.key,row]));
-    const storeRows=(benchmark?group(baseStoreRows,row=>row.store):group(rows,row=>row.store)).map(base=>{
-      const selectedRow=selectedByStore.get(base.key);const first=baseStoreRows.find(row=>row.store===base.key)||rows.find(row=>row.store===base.key)||{};
+    const baseStoreRows=filteredRows(true);const storeKey=row=>allLobs?`${row.lob}\u241f${row.store}`:row.store;const selectedByStore=new Map(group(rows,storeKey).map(row=>[row.key,row]));
+    const storeRows=(benchmark?group(baseStoreRows,storeKey):group(rows,storeKey)).map(base=>{
+      const [rowLob,store]=allLobs?base.key.split('\u241f'):[selectedLob,base.key];
+      const selectedRow=selectedByStore.get(base.key);const first=baseStoreRows.find(row=>row.store===store&&row.lob===rowLob)||rows.find(row=>row.store===store&&row.lob===rowLob)||{};
       const performance=benchmark?(selectedRow||{key:base.key,units:0,revenue:0,grossProfit:0,discount:0,stores:new Set([base.key])}):base;
       const storeMix=benchmark&&base.units?num(performance.units)/num(base.units)*100:null;
       const gap=benchmark&&storeMix!==null?storeMix-benchmark.mix:null;
-      return {...performance,rm:first.rm||'—',arm:first.arm||'—',location:first.location||'—',storeMix,gap,status:gap===null?'neutral':gap>=0?'above':'below'};
-    }).sort((a,b)=>benchmark?num(b.storeMix)-num(a.storeMix)||num(b.units)-num(a.units):num(b.units)-num(a.units));
+      return {...performance,key:store,lob:rowLob,rm:first.rm||'—',arm:first.arm||'—',location:first.location||'—',storeMix,gap,status:gap===null?'neutral':gap>=0?'above':'below'};
+    }).sort((a,b)=>allLobs?LOBS.indexOf(a.lob)-LOBS.indexOf(b.lob)||num(b.units)-num(a.units):benchmark?num(b.storeMix)-num(a.storeMix)||num(b.units)-num(a.units):num(b.units)-num(a.units));
     const above=storeRows.filter(row=>row.status==='above').length;const below=storeRows.filter(row=>row.status==='below').length;
     const benchmarkNode=document.getElementById('productBenchmark');
     benchmarkNode.innerHTML=benchmark?`<div><span>Organisation benchmark</span><b>${esc(productLabel(benchmark.subLob))} is ${pct(benchmark.mix)} of ${esc(benchmark.lob)} units</b><small>${fmt(benchmark.numerator)} ÷ ${fmt(benchmark.denominator)} units · selected period · entire organisation</small></div><div class="productBenchmarkCounts"><div><span>Good performance</span><b class="positive">${fmt(above)} stores</b></div><div><span>Needs improvement</span><b class="negative">${fmt(below)} stores</b></div></div><div class="productBenchmarkLegend"><span class="above">Good: at/above ${pct(benchmark.mix)}</span><span class="below">Needs improvement: below ${pct(benchmark.mix)}</span><small>Relative mix benchmark, not a sales target.</small></div>`:`<div><span>Contribution benchmark</span><b>Select a specific sub-LOB / model</b><small>Each store's unit mix will be compared with the entire organisation for the selected period.</small></div>`;
-    const storeTotalUnits=sum(storeRows,'units');const storeTotalRevenue=sum(storeRows,'revenue');const storeTotalGp=sum(storeRows,'grossProfit');
-    const storeTotalMix=benchmark&&benchmark.denominator?storeTotalUnits/benchmark.denominator*100:null;
-    document.getElementById('productStoreRows').innerHTML=storeRows.length?storeRows.map(row=>`<tr class="${benchmark?`productBenchmarkRow ${row.status}`:''}"><td><b>${esc(cleanStore(row.key))}</b></td><td>${esc(row.location)}</td><td>${esc(row.arm)}</td><td>${fmt(row.units)}</td><td>${money(row.revenue)}</td><td>${row.units?money(row.revenue/row.units):'—'}</td><td>${row.revenue?pct(row.grossProfit/row.revenue*100):'—'}</td><td>${benchmark&&row.storeMix!==null?pct(row.storeMix):'—'}</td><td class="${benchmark?row.status:''}">${benchmark&&row.gap!==null?`${row.gap>=0?'+':''}${row.gap.toFixed(1)} pts`:'—'}</td><td>${benchmark?`<span class="productStatus ${row.status}">${row.status==='above'?'Good performance':'Needs improvement'}</span>`:'—'}</td></tr>`).join('')+`<tr class="productTotalRow"><th>Total · selected scope</th><td>All locations</td><td>All ARMs</td><td>${fmt(storeTotalUnits)}</td><td>${money(storeTotalRevenue)}</td><td>${storeTotalUnits?money(storeTotalRevenue/storeTotalUnits):'—'}</td><td>${storeTotalRevenue?pct(storeTotalGp/storeTotalRevenue*100):'—'}</td><td>${storeTotalMix!==null?pct(storeTotalMix):'—'}</td><td>—</td><td>Selected scope</td></tr>`:`<tr><td colspan="10" class="productEmpty">No sales match this selection.</td></tr>`;
+    const totalLobs=allLobs?LOBS.filter(lob=>storeRows.some(row=>row.lob===lob)):[selectedLob];
+    const storeTotals=totalLobs.map(lob=>{const subset=storeRows.filter(row=>row.lob===lob);const totalUnits=sum(subset,'units');const totalRevenue=sum(subset,'revenue');const totalGp=sum(subset,'grossProfit');return {lob,totalUnits,totalRevenue,totalGp,totalMix:benchmark&&benchmark.denominator?totalUnits/benchmark.denominator*100:null};});
+    document.getElementById('productStoreRows').innerHTML=storeRows.length?storeRows.map(row=>`<tr class="${benchmark?`productBenchmarkRow ${row.status}`:''}"><td><b>${esc(row.lob)}</b></td><td><b>${esc(cleanStore(row.key))}</b></td><td>${esc(row.location)}</td><td>${esc(row.arm)}</td><td>${fmt(row.units)}</td><td>${money(row.revenue)}</td><td>${row.units?money(row.revenue/row.units):'—'}</td><td>${row.revenue?pct(row.grossProfit/row.revenue*100):'—'}</td><td>${benchmark&&row.storeMix!==null?pct(row.storeMix):'—'}</td><td class="${benchmark?row.status:''}">${benchmark&&row.gap!==null?`${row.gap>=0?'+':''}${row.gap.toFixed(1)} pts`:'—'}</td><td>${benchmark?`<span class="productStatus ${row.status}">${row.status==='above'?'Good performance':'Needs improvement'}</span>`:'—'}</td></tr>`).join('')+storeTotals.map(total=>`<tr class="productTotalRow"><th>${esc(total.lob)}</th><th>Total</th><td>All locations</td><td>All ARMs</td><td>${fmt(total.totalUnits)}</td><td>${money(total.totalRevenue)}</td><td>${total.totalUnits?money(total.totalRevenue/total.totalUnits):'—'}</td><td>${total.totalRevenue?pct(total.totalGp/total.totalRevenue*100):'—'}</td><td>${total.totalMix!==null?pct(total.totalMix):'—'}</td><td>—</td><td>Selected LOB</td></tr>`).join(''):`<tr><td colspan="11" class="productEmpty">No sales match this selection.</td></tr>`;
 
     const detail=group(rows,row=>`${row.lob}\u241f${row.subLob}\u241f${row.store}`).map(grouped=>{
       const [lob,subLob,store]=grouped.key.split('\u241f');const first=rows.find(row=>row.lob===lob&&row.subLob===subLob&&row.store===store)||{};
       return {...grouped,lob,subLob,store,location:first.location||'—',arm:first.arm||'—'};
     });
-    const detailUnits=sum(detail,'units');const detailRevenue=sum(detail,'revenue');
-    document.getElementById('productDetailRows').innerHTML=detail.length?detail.slice(0,200).map(row=>`<tr><td>${esc(row.lob)}</td><td><b>${esc(productLabel(row.subLob))}</b></td><td>${esc(cleanStore(row.store))}</td><td>${esc(row.location)}</td><td>${esc(row.arm)}</td><td>${fmt(row.units)}</td><td>${money(row.revenue)}</td><td>${row.units?money(row.revenue/row.units):'—'}</td></tr>`).join('')+`<tr class="productTotalRow"><th>Total · full filtered result</th><td>${fmt(detail.length)} grouped rows</td><td>All selected stores</td><td>All selected locations</td><td>All selected ARMs</td><td>${fmt(detailUnits)}</td><td>${money(detailRevenue)}</td><td>${detailUnits?money(detailRevenue/detailUnits):'—'}</td></tr>`:`<tr><td colspan="8" class="productEmpty">No detailed rows match this selection.</td></tr>`;
+    const detailTotals=totalLobs.map(lob=>{const subset=detail.filter(row=>row.lob===lob);const totalUnits=sum(subset,'units');const totalRevenue=sum(subset,'revenue');return {lob,rows:subset.length,totalUnits,totalRevenue};});
+    document.getElementById('productDetailRows').innerHTML=detail.length?detail.slice(0,200).map(row=>`<tr><td>${esc(row.lob)}</td><td><b>${esc(productLabel(row.subLob))}</b></td><td>${esc(cleanStore(row.store))}</td><td>${esc(row.location)}</td><td>${esc(row.arm)}</td><td>${fmt(row.units)}</td><td>${money(row.revenue)}</td><td>${row.units?money(row.revenue/row.units):'—'}</td></tr>`).join('')+detailTotals.map(total=>`<tr class="productTotalRow"><th>${esc(total.lob)}</th><th>Total · ${fmt(total.rows)} grouped rows</th><td>All selected stores</td><td>All selected locations</td><td>All selected ARMs</td><td>${fmt(total.totalUnits)}</td><td>${money(total.totalRevenue)}</td><td>${total.totalUnits?money(total.totalRevenue/total.totalUnits):'—'}</td></tr>`).join(''):`<tr><td colspan="8" class="productEmpty">No detailed rows match this selection.</td></tr>`;
   }
 
   function csvCell(value){const text=String(value??'');return /[",\n]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;}
@@ -234,7 +241,7 @@
       <div class="productScopeReadout" id="productScopeReadout"></div><div class="productDefinition"><b>Achievement on this page means actual net sales.</b> LOB, ARM, location and store results can be filtered for QTD or a selected week. Sub-LOB/model actuals are available, but sub-LOB target achievement % is not calculated because the target source has no model-level targets.</div><div class="productKpis" id="productKpis"></div>
       <div class="productAnalysisGrid"><div class="card"><h3>Sub-LOB / model mix</h3><div id="productSubLobBars"></div></div><div class="card"><h3>ARM performance</h3><div id="productArmBars"></div></div><div class="card"><h3>Location performance</h3><div id="productLocationBars"></div></div></div>
       <div class="card productTableCard productContributionCard"><div class="productTableHead"><div><h3>ARM sales by week</h3><p>The matrix follows the LOB and sub-LOB/model selected above. Every value is the absolute number of selected product units sold by that ARM in the week.</p></div><div class="productContributionScope" id="productContributionScope"></div></div><div class="productContributionSummary" id="productContributionSummary"></div><div class="productContributionMatrix" id="productContributionMatrix"></div></div>
-      <div class="card productTableCard"><div class="productTableHead"><div><h3>Store contribution vs organisation</h3><p>For a selected sub-LOB, store unit mix is green when it meets or exceeds the organisation's unit-mix benchmark and red when it is below.</p></div></div><div class="productBenchmark" id="productBenchmark"></div><div class="productTableWrap productStoreBenchmarkTable"><table><thead><tr><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th><th>GP %</th><th>Unit mix</th><th>Vs org</th><th>Status</th></tr></thead><tbody id="productStoreRows"></tbody></table></div></div>
+      <div class="card productTableCard"><div class="productTableHead"><div><h3>Store contribution vs organisation</h3><p>For a selected sub-LOB, store unit mix is green when it meets or exceeds the organisation's unit-mix benchmark and red when it is below.</p></div></div><div class="productBenchmark" id="productBenchmark"></div><div class="productTableWrap productStoreBenchmarkTable"><table><thead><tr><th>LOB</th><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th><th>GP %</th><th>Unit mix</th><th>Vs org</th><th>Status</th></tr></thead><tbody id="productStoreRows"></tbody></table></div></div>
       <div class="card productTableCard"><div class="productTableHead"><div><h3>Detailed product records</h3><p>LOB × sub-LOB × store; up to 200 rows shown. Export retains the full filtered result.</p></div></div><div class="productTableWrap"><table><thead><tr><th>LOB</th><th>Sub-LOB / model</th><th>Store</th><th>Location</th><th>ARM</th><th>Units</th><th>Revenue</th><th>ASP</th></tr></thead><tbody id="productDetailRows"></tbody></table></div></div>
       <div class="productMethod">Source: verified POS and Sale Return invoice rows from 27 Sep through ${esc(SALES?.asOfDate||'—')}. Cancelled/held transactions, non-target stores and categories outside iPhone, Mac, iPad, Watch and AirPods are excluded.</div>`;
     document.getElementById('productWeek').addEventListener('change',()=>refreshDimensions('week'));
