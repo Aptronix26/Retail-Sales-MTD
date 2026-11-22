@@ -18,7 +18,7 @@
     const checks=[
       {label:'Date continuity',pass:!(qa.missingDates||[]).length,detail:(qa.missingDates||[]).length?`${qa.missingDates.length} missing dates`:`${qa.dateStart||'—'} to ${qa.dateEnd||SALES.asOfDate}`},
       {label:'Source overlap',pass:!(qa.overlapDates||[]).length,detail:(qa.overlapDates||[]).length?`${qa.overlapDates.length} overlapping dates`:'No overlapping daily files'},
-      {label:'Exact duplicates',pass:num(qa.exactDuplicateRows)===0,detail:`${fmt(qa.exactDuplicateRows)} duplicate rows`},
+      {label:'Exact duplicates',pass:num(qa.exactDuplicateRows)===0,detail:num(qa.deduplicatedRows)?`${fmt(qa.deduplicatedRows)} raw duplicates removed · 0 published`:`${fmt(qa.exactDuplicateRows)} duplicate rows`},
       {label:'Executive identity',pass:num(qa.missingExecutiveRows)===0,detail:`${fmt(qa.missingExecutiveRows)} target-store rows missing identity`},
       {label:'Current-week stores',pass:num(qa.latestWeekStores)===num(qa.targetStores)&&num(qa.targetStores)>0,detail:`${fmt(qa.latestWeekStores)} of ${fmt(qa.targetStores)} stores`},
       {label:'Return reasonableness',pass:num(qa.returnRate)<=15,detail:`${pct(qa.returnRate)} of gross sold units`},
@@ -97,7 +97,11 @@
     const rows=currentRows();
     const sourceTotal=sumByWeek(SALES.sourceCoreByWeek);
     const matchedTotal=sumByWeek(SALES.matchedCoreByWeek);
-    const coverage=sourceTotal?matchedTotal/sourceTotal*100:100;
+    const quarterCoverage=sourceTotal?matchedTotal/sourceTotal*100:100;
+    const currentWeek=Object.entries(SALES.weekRanges||{}).filter(([,period])=>period?.isComplete).sort((a,b)=>String(a[1].end).localeCompare(String(b[1].end))).at(-1)?.[0];
+    const currentSource=currentWeek?LOBS.reduce((sum,lob)=>sum+num(SALES.sourceCoreByWeek?.[currentWeek]?.[lob]),0):sourceTotal;
+    const currentMatched=currentWeek?LOBS.reduce((sum,lob)=>sum+num(SALES.matchedCoreByWeek?.[currentWeek]?.[lob]),0):matchedTotal;
+    const coverage=currentSource?currentMatched/currentSource*100:100;
     const unresolvedUnits=rows.reduce((total,row)=>total+num(row.units),0);
     const source=sourceHealth();
     const access=loginHealth();
@@ -108,7 +112,7 @@
     if(summary)summary.innerHTML=`
       <div class="dqMetric dqMetric--good"><span>Network store coverage</span><b>${allowed.size?`${allowed.size} / ${allowed.size}`:'—'}</b><small>${allowed.size?'All permitted stores represented':'Sign in to view your permitted scope'}</small></div>
       <div class="dqMetric ${num(STAFF.pendingEmployees)?'dqMetric--review':'dqMetric--good'}"><span>Staff master mapping</span><b>${STAFF.mappedEmployees?`${fmt(STAFF.mappedEmployees)} / ${fmt(STAFF.sourceRows)}`:'—'}</b><small>${STAFF.pendingEmployees?`${fmt(STAFF.pendingEmployees)} records need hierarchy confirmation`:'All current employees mapped'}</small></div>
-      <div class="dqMetric ${coverage>=95?'dqMetric--good':'dqMetric--risk'}"><span>Staff attribution</span><b>${pct(coverage)}</b><small>${fmt(matchedTotal)} of ${fmt(sourceTotal)} core units</small></div>
+      <div class="dqMetric ${coverage>=95?'dqMetric--good':'dqMetric--risk'}"><span>${esc(currentWeek||'Current')} staff attribution</span><b>${pct(coverage)}</b><small>${fmt(currentMatched)} of ${fmt(currentSource)} units · QTD ${pct(quarterCoverage)}</small></div>
       <div class="dqMetric ${rows.length?'dqMetric--review':'dqMetric--good'}"><span>Assignments to review</span><b>${fmt(rows.length)}</b><small>${fmt(unresolvedUnits)} units in the current view</small></div>
       <div class="dqMetric ${source.passed?'dqMetric--good':'dqMetric--risk'}"><span>Upload validation</span><b>${source.passed?'Passed':'Blocked'}</b><small>${source.passed?'Dates, duplicates, identities and returns passed':`${source.qa.criticalIssues?.length||0} critical source issues`}</small></div>
       <div class="dqMetric ${access.passed?'dqMetric--good':'dqMetric--risk'}"><span>Login scope health</span><b>${access.passed?`${fmt(access.accounts)} / ${fmt(access.accounts)}`:'Review'}</b><small>${access.passed?`${access.scopeCount||0} stores in the signed-in scope`:`${access.errors.length} access errors`}</small></div>

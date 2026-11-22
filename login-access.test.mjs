@@ -9,7 +9,7 @@ const stores=extract(/window\.STORE_MAP=(\[.*?\]);/s);
 const employees=extract(/window\.PROD_EMPLOYEE_ACCESS_2454=(\[.*?\]);/s);
 const context={window:{}};
 vm.createContext(context);
-for(const file of ['weekly-targets.js','sales-achievements.js','product-sales-data.js'])vm.runInContext(fs.readFileSync(new URL(`./${file}`,import.meta.url),'utf8'),context);
+for(const file of ['weekly-targets.js','sales-achievements.js','product-sales-data.js','product-sales-data-2.js'])vm.runInContext(fs.readFileSync(new URL(`./${file}`,import.meta.url),'utf8'),context);
 const targets=context.window.WEEKLY_STAFF_TARGETS;
 const sales=context.window.WEEKLY_STAFF_ACHIEVEMENTS;
 const lobs=Array.from(targets.lobOrder);
@@ -74,7 +74,7 @@ test('staff-master target names reference an existing target row in the same sto
 
 test('every login scope reconciles current-week LOB actuals across product and commercial sources',()=>{
   for(const account of allAccounts)assert.deepEqual(productActual(accountStores(account)),commercialActual(accountStores(account)),`${account.employeeId} ${account.fullName} has inconsistent current-week totals`);
-  assert.deepEqual(productActual(stores),{iPhone:1533,Mac:331,iPad:214,Watch:183,AirPods:438});
+  assert.deepEqual(productActual(stores),{iPhone:1897,Mac:416,iPad:258,Watch:218,AirPods:572});
 });
 
 test('every hierarchy store exists in targets, commercial and product actuals',()=>{

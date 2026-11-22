@@ -8,6 +8,7 @@ vm.createContext(context);
 vm.runInContext(fs.readFileSync(new URL('./weekly-targets.js',import.meta.url),'utf8'),context);
 vm.runInContext(fs.readFileSync(new URL('./sales-achievements.js',import.meta.url),'utf8'),context);
 vm.runInContext(fs.readFileSync(new URL('./product-sales-data.js',import.meta.url),'utf8'),context);
+vm.runInContext(fs.readFileSync(new URL('./product-sales-data-2.js',import.meta.url),'utf8'),context);
 const targets=context.window.WEEKLY_STAFF_TARGETS;
 const sales=context.window.WEEKLY_STAFF_ACHIEVEMENTS;
 const lobs=Array.from(targets.lobOrder);
@@ -20,7 +21,7 @@ test('current weekly target and staff-attributed achievement reconcile',()=>{
   }
   for(const row of sales.rows)for(const lob of lobs)actual+=Number(row.achievements.W8[lob]||0);
   assert.equal(target,3634);
-  assert.equal(actual,2640);
+  assert.equal(actual,3286);
 });
 
 test('week boundaries support automatic Sunday rollover',()=>{
@@ -37,11 +38,11 @@ test('weekly commercial source covers all stores and uses invoice fields',()=>{
   assert.equal(rows.length,69);
   assert.equal(new Set(rows.map(row=>row.store)).size,69);
   const total=field=>rows.reduce((sum,row)=>sum+Number(row[field]||0),0);
-  assert.equal(total('coreUnits'),2699);
-  assert.equal(total('tradeInUnits'),156);
-  assert.equal(total('financeUnits'),789);
-  assert.equal(total('licenseUnits'),1051);
-  assert.equal(Math.round(total('netRevenue')),350257889);
+  assert.equal(total('coreUnits'),3361);
+  assert.equal(total('tradeInUnits'),205);
+  assert.equal(total('financeUnits'),1006);
+  assert.equal(total('licenseUnits'),1295);
+  assert.equal(Math.round(total('netRevenue')),426617770);
   for(const lob of lobs){
     const lobUnits=rows.reduce((sum,row)=>sum+Number(row.lobUnits?.[lob]||0),0);
     assert.equal(lobUnits,Number(sales.sourceCoreByWeek.W8[lob]||0));
@@ -52,7 +53,7 @@ test('weekly commercial source covers all stores and uses invoice fields',()=>{
   assert.ok(rows.every(row=>Number(row.financeUnits)<=Number(row.coreUnits)));
   assert.ok(rows.every(row=>Number(row.licenseUnits)>=0));
   const productRows=sales.productByStoreWeek.filter(row=>row.week==='W8');
-  assert.equal(productRows.reduce((sum,row)=>sum+Number(row.units||0),0),2699);
+  assert.equal(productRows.reduce((sum,row)=>sum+Number(row.units||0),0),3361);
   for(const lob of lobs){
     assert.equal(productRows.filter(row=>row.lob===lob).reduce((sum,row)=>sum+Number(row.units||0),0),Number(sales.sourceCoreByWeek.W8[lob]||0));
   }

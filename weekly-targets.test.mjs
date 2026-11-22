@@ -8,6 +8,7 @@ vm.createContext(context);
 vm.runInContext(fs.readFileSync(new URL('./weekly-targets.js',import.meta.url),'utf8'),context);
 vm.runInContext(fs.readFileSync(new URL('./sales-achievements.js',import.meta.url),'utf8'),context);
 vm.runInContext(fs.readFileSync(new URL('./product-sales-data.js',import.meta.url),'utf8'),context);
+vm.runInContext(fs.readFileSync(new URL('./product-sales-data-2.js',import.meta.url),'utf8'),context);
 const data=context.window.WEEKLY_STAFF_TARGETS;
 const sales=context.window.WEEKLY_STAFF_ACHIEVEMENTS;
 
@@ -52,11 +53,11 @@ test('sales achievement rows map one-to-one to all target staff rows',()=>{
 });
 
 test('sales dump follows the Sunday-to-Saturday quarter calendar',()=>{
-  assert.equal(sales.asOfDate,'2026-11-20');
+  assert.equal(sales.asOfDate,'2026-11-21');
   assert.deepEqual(JSON.parse(JSON.stringify(sales.weekRanges.W1)),{start:'2026-09-27',end:'2026-10-03',isComplete:true});
   assert.deepEqual(JSON.parse(JSON.stringify(sales.weekRanges.W6)),{start:'2026-11-01',end:'2026-11-07',isComplete:true});
   assert.deepEqual(JSON.parse(JSON.stringify(sales.weekRanges.W7)),{start:'2026-11-08',end:'2026-11-14',isComplete:true});
-  assert.deepEqual(JSON.parse(JSON.stringify(sales.weekRanges.W8)),{start:'2026-11-15',end:'2026-11-21',isComplete:false});
+  assert.deepEqual(JSON.parse(JSON.stringify(sales.weekRanges.W8)),{start:'2026-11-15',end:'2026-11-21',isComplete:true});
 });
 
 test('mapped and unmapped core units reconcile to source core units for every week',()=>{
@@ -94,11 +95,11 @@ test('weekly workspace renders current-week target and achievement values',()=>{
   vm.createContext(uiContext);
   vm.runInContext(fs.readFileSync(new URL('./weekly-targets-ui.js',import.meta.url),'utf8'),uiContext);
   assert.equal(elements.get('weeklyTargetWeek').value,'W8');
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/1,533 \/ 2,257/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/331 \/ 450/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/214 \/ 288/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/183 \/ 246/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/438 \/ 393/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/1,897 \/ 2,257/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/416 \/ 450/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/258 \/ 288/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/218 \/ 246/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/572 \/ 393/);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Target</);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Achieved</);
 
