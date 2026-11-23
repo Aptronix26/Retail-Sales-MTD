@@ -32,13 +32,13 @@ function accountStores(account){
   if(['Store Manager','Staff'].includes(account.role))return stores.filter(row=>row.store===account.scopeUser);
   return [];
 }
-function productActual(scope,week='W8'){
+function productActual(scope,week='W9'){
   const allowed=new Set(scope.map(row=>row.store));
   const out=Object.fromEntries(lobs.map(lob=>[lob,0]));
   for(const row of sales.productByStoreWeek||[])if(row.week===week&&allowed.has(row.store)&&lobs.includes(row.lob))out[row.lob]+=Number(row.units||0);
   return out;
 }
-function commercialActual(scope,week='W8'){
+function commercialActual(scope,week='W9'){
   const allowed=new Set(scope.map(row=>row.store));
   const out=Object.fromEntries(lobs.map(lob=>[lob,0]));
   for(const row of sales.commercialByStoreWeek||[])if(row.week===week&&allowed.has(row.store))for(const lob of lobs)out[lob]+=Number(row.lobUnits?.[lob]||0);
@@ -74,7 +74,7 @@ test('staff-master target names reference an existing target row in the same sto
 
 test('every login scope reconciles current-week LOB actuals across product and commercial sources',()=>{
   for(const account of allAccounts)assert.deepEqual(productActual(accountStores(account)),commercialActual(accountStores(account)),`${account.employeeId} ${account.fullName} has inconsistent current-week totals`);
-  assert.deepEqual(productActual(stores),{iPhone:1897,Mac:416,iPad:258,Watch:218,AirPods:572});
+  assert.deepEqual(productActual(stores),{iPhone:430,Mac:86,iPad:57,Watch:51,AirPods:93});
 });
 
 test('every hierarchy store exists in targets, commercial and product actuals',()=>{

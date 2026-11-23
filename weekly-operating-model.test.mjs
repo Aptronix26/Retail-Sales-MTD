@@ -17,11 +17,11 @@ test('current weekly target and staff-attributed achievement reconcile',()=>{
   let target=0;
   let actual=0;
   for(const arm of targets.arms)for(const store of arm.stores)for(const staff of store.staff)for(const lob of lobs){
-    target+=Number(staff.targets.W8[lob]||0);
+    target+=Number(staff.targets.W9[lob]||0);
   }
-  for(const row of sales.rows)for(const lob of lobs)actual+=Number(row.achievements.W8[lob]||0);
-  assert.equal(target,3634);
-  assert.equal(actual,3286);
+  for(const row of sales.rows)for(const lob of lobs)actual+=Number(row.achievements.W9[lob]||0);
+  assert.equal(target,3484);
+  assert.equal(actual,698);
 });
 
 test('week boundaries support automatic Sunday rollover',()=>{
@@ -31,31 +31,32 @@ test('week boundaries support automatic Sunday rollover',()=>{
   });
   assert.equal(weekFor('2026-11-14'),'W7');
   assert.equal(weekFor('2026-11-15'),'W8');
+  assert.equal(weekFor('2026-11-22'),'W9');
 });
 
 test('weekly commercial source covers all stores and uses invoice fields',()=>{
-  const rows=sales.commercialByStoreWeek.filter(row=>row.week==='W8');
+  const rows=sales.commercialByStoreWeek.filter(row=>row.week==='W9');
   assert.equal(rows.length,69);
   assert.equal(new Set(rows.map(row=>row.store)).size,69);
   const total=field=>rows.reduce((sum,row)=>sum+Number(row[field]||0),0);
-  assert.equal(total('coreUnits'),3361);
-  assert.equal(total('tradeInUnits'),205);
-  assert.equal(total('financeUnits'),1006);
-  assert.equal(total('licenseUnits'),1295);
-  assert.equal(Math.round(total('netRevenue')),426617770);
+  assert.equal(total('coreUnits'),717);
+  assert.equal(total('tradeInUnits'),59);
+  assert.equal(total('financeUnits'),271);
+  assert.equal(total('licenseUnits'),240);
+  assert.equal(Math.round(total('netRevenue')),88496372);
   for(const lob of lobs){
     const lobUnits=rows.reduce((sum,row)=>sum+Number(row.lobUnits?.[lob]||0),0);
-    assert.equal(lobUnits,Number(sales.sourceCoreByWeek.W8[lob]||0));
+    assert.equal(lobUnits,Number(sales.sourceCoreByWeek.W9[lob]||0));
   }
   assert.equal(rows.reduce((sum,row)=>sum+lobs.reduce((lobSum,lob)=>lobSum+Number(row.lobUnits?.[lob]||0),0),0),total('coreUnits'));
   assert.equal(rows.reduce((sum,row)=>sum+lobs.reduce((lobSum,lob)=>lobSum+Number(row.licenseByLob?.[lob]||0),0),0),total('licenseUnits'));
   assert.ok(rows.every(row=>Number(row.tradeInUnits)<=Number(row.coreUnits)));
   assert.ok(rows.every(row=>Number(row.financeUnits)<=Number(row.coreUnits)));
   assert.ok(rows.every(row=>Number(row.licenseUnits)>=0));
-  const productRows=sales.productByStoreWeek.filter(row=>row.week==='W8');
-  assert.equal(productRows.reduce((sum,row)=>sum+Number(row.units||0),0),3361);
+  const productRows=sales.productByStoreWeek.filter(row=>row.week==='W9');
+  assert.equal(productRows.reduce((sum,row)=>sum+Number(row.units||0),0),717);
   for(const lob of lobs){
-    assert.equal(productRows.filter(row=>row.lob===lob).reduce((sum,row)=>sum+Number(row.units||0),0),Number(sales.sourceCoreByWeek.W8[lob]||0));
+    assert.equal(productRows.filter(row=>row.lob===lob).reduce((sum,row)=>sum+Number(row.units||0),0),Number(sales.sourceCoreByWeek.W9[lob]||0));
   }
   const galleriaIphone17=sales.productByStoreWeek.find(row=>row.week==='W1'&&row.store==='Aptronix Galleria'&&row.lob==='iPhone'&&row.subLob==='IPHONE 17');
   assert.equal(galleriaIphone17?.units,10);
