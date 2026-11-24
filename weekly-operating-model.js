@@ -56,8 +56,9 @@
     for(const arm of TARGETS.arms||[])for(const store of arm.stores||[]){
       if(!stores.has(store.store))continue;
       const storeRow=ensure(store.store);
-      for(const staff of store.staff||[])for(const lob of LOBS){
-        const value=num(staff.targets?.[week]?.[lob]);
+      const override=TARGETS.weeklyStoreTargets?.[week]?.[store.store];
+      for(const lob of LOBS){
+        const value=override?num(override[lob]):sum((store.staff||[]).map(staff=>staff.targets?.[week]?.[lob]));
         byLob[lob].target+=value;storeRow.byLob[lob].target+=value;
       }
     }

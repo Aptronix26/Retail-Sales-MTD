@@ -38,6 +38,20 @@ test('weekly target rows retain all five LOB fields and no achievement placehold
   }
 });
 
+test('latest W9 location targets cover the complete network',()=>{
+  assert.equal(data.targetRefresh.week,'W9');
+  assert.equal(data.targetRefresh.sourceCheckedOn,'2026-11-24');
+  assert.equal(data.targetRefresh.storeCount,69);
+  assert.equal(data.targetRefresh.matchedStaff,310);
+  assert.equal(data.targetRefresh.changedStaffRows,92);
+  assert.equal(data.targetRefresh.identityExceptions.length,3);
+  assert.equal(Object.keys(data.weeklyStoreTargets.W9).length,69);
+  const targetStores=JSON.parse(JSON.stringify(data.arms.flatMap(arm=>arm.stores.map(store=>store.store)).sort()));
+  assert.deepEqual(JSON.parse(JSON.stringify(Object.keys(data.weeklyStoreTargets.W9).sort())),targetStores);
+  const totals=Object.fromEntries(data.lobOrder.map(lob=>[lob,Object.values(data.weeklyStoreTargets.W9).reduce((sum,row)=>sum+Number(row[lob]||0),0)]));
+  assert.deepEqual(JSON.parse(JSON.stringify(totals)),{iPhone:2663,Mac:547,iPad:356,Watch:317,AirPods:490});
+});
+
 test('management override assigns Kochi to Poornesh without a review alert',()=>{
   assert.deepEqual(JSON.parse(JSON.stringify(data.mappingIssues)),[]);
   const kochi=data.arms.flatMap(arm=>arm.stores.map(store=>({arm:arm.arm,store:store.store}))).filter(row=>row.store==='Aptronix Kochi');
@@ -96,11 +110,11 @@ test('weekly workspace renders current-week target and achievement values',()=>{
   vm.createContext(uiContext);
   vm.runInContext(fs.readFileSync(new URL('./weekly-targets-ui.js',import.meta.url),'utf8'),uiContext);
   assert.equal(elements.get('weeklyTargetWeek').value,'W9');
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/430 \/ 2,139/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/86 \/ 439/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/57 \/ 280/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/51 \/ 240/);
-  assert.match(elements.get('weeklyTargetKpis').innerHTML,/93 \/ 386/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/430 \/ 2,663/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/86 \/ 547/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/57 \/ 356/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/51 \/ 317/);
+  assert.match(elements.get('weeklyTargetKpis').innerHTML,/93 \/ 490/);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Target</);
   assert.match(elements.get('weeklyTargetRows').innerHTML,/>Achieved</);
 

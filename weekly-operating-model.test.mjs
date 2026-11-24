@@ -15,12 +15,15 @@ const lobs=Array.from(targets.lobOrder);
 
 test('current weekly target and staff-attributed achievement reconcile',()=>{
   let target=0;
+  let storeTarget=0;
   let actual=0;
   for(const arm of targets.arms)for(const store of arm.stores)for(const staff of store.staff)for(const lob of lobs){
     target+=Number(staff.targets.W9[lob]||0);
   }
   for(const row of sales.rows)for(const lob of lobs)actual+=Number(row.achievements.W9[lob]||0);
-  assert.equal(target,3484);
+  for(const store of Object.values(targets.weeklyStoreTargets.W9))for(const lob of lobs)storeTarget+=Number(store[lob]||0);
+  assert.equal(target,4346);
+  assert.equal(storeTarget,4373);
   assert.equal(actual,698);
 });
 
