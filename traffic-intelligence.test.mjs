@@ -35,8 +35,8 @@ test('traffic page is wired into public business navigation and applies scoped a
   assert.match(html,/data-page="traffic" href="#traffic"/);
   assert.match(html,/id="trafficIntelligenceRoot"/);
   assert.match(html,/traffic-data\.js\?v=20261127-1/);
-  assert.match(html,/traffic-intelligence\.js\?v=20261127-20/);
-  assert.match(html,/traffic-intelligence\.css\?v=20261127-13/);
+  assert.match(html,/traffic-intelligence\.js\?v=20261127-22/);
+  assert.match(html,/traffic-intelligence\.css\?v=20261127-15/);
   assert.match(ui,/if\(current\.role==='ARM'\)return ROWS\.filter\(row=>row\.arm===current\.user\)/);
   assert.match(ui,/\['Store Manager','Staff'\]\.includes\(current\.role\)/);
   assert.match(ui,/same \$\{days\} days vs/);
@@ -87,7 +87,8 @@ test('day-wise store revenue comes from the raw invoice statement and is complet
   for(const store of new Set(data.rows.map(r=>r.store)))assert.ok(revenueStores.has(key(store)),`no revenue for ${store}`);
 });
 
-test('zero-footfall days (ST issue) are excluded from both sides of comparisons',()=>{
+test('zero-footfall days (ST issue) are highlighted but still included in comparisons',()=>{
+  assert.match(ui,/current\+=c;previous\+=pv;/);
   assert.match(ui,/function pairedCompare/);
   assert.match(ui,/ST issue/);
   assert.ok(!/counter issue/i.test(ui));
