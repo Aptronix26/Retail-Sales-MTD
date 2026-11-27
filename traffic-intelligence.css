@@ -14,3 +14,8 @@
 .trafficTableWrap:has(#trafficLocationRows){max-height:none;overflow-x:auto}
 
 .trafficTable tr.trafficTotalRow td{position:sticky;bottom:0;z-index:1;background:#eef4fc;border-top:2px solid #9fb8dc;font-weight:800;color:#10233f}.trafficTable tr.trafficTotalRow td small{font-weight:700;color:#53647b}.trafficTable tr.trafficTotalRow:hover td{background:#eef4fc}
+
+.trafficTable.weekTrend{min-width:1500px}.trafficTable.weekTrend th.weekHead{text-align:right}.trafficTable.weekTrend th.weekHead small{display:block;font-size:9px;letter-spacing:0;text-transform:none;font-weight:700;color:#7a8aa0}
+.trafficTable td.weekCell{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;padding:8px 10px}.trafficTable td.weekCell span{display:block}.trafficTable td.weekCell .ff{font-weight:800;color:#10233f}.trafficTable td.weekCell .rev{margin-top:3px;color:#53647b;font-size:11px}
+.trafficTable td.weekCell i{font-style:normal;font-size:10px;font-weight:800;margin-left:5px}.trafficTable td.weekCell i.up{color:#15803d}.trafficTable td.weekCell i.down{color:#b42318}.trafficTable td.weekCell i.flat{color:#98a2b3}
+.trafficTable td.weekCell.qtd{background:#f5f8fd}.trafficTable td small.sub{display:block;color:#7a8aa0;font-size:10px;font-weight:600}
