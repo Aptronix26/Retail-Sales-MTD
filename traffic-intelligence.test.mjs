@@ -35,8 +35,8 @@ test('traffic page is wired into public business navigation and applies scoped a
   assert.match(html,/data-page="traffic" href="#traffic"/);
   assert.match(html,/id="trafficIntelligenceRoot"/);
   assert.match(html,/traffic-data\.js\?v=20261127-1/);
-  assert.match(html,/traffic-intelligence\.js\?v=20261127-14/);
-  assert.match(html,/traffic-intelligence\.css\?v=20261127-8/);
+  assert.match(html,/traffic-intelligence\.js\?v=20261127-15/);
+  assert.match(html,/traffic-intelligence\.css\?v=20261127-9/);
   assert.match(ui,/if\(current\.role==='ARM'\)return ROWS\.filter\(row=>row\.arm===current\.user\)/);
   assert.match(ui,/\['Store Manager','Staff'\]\.includes\(current\.role\)/);
   assert.match(ui,/same \$\{days\} days vs/);
@@ -65,4 +65,9 @@ test('MTD period is offered and compares the same dates of the prior month',()=>
 test('separate week-on-week trend grid for footfall and revenue',()=>{
   assert.match(ui,/id="trafficWowRows"/);
   assert.match(ui,/function renderWowGrid/);
+});
+
+test('location grid has an ARM selector and the ARM performance card is removed',()=>{
+  assert.match(ui,/id="trafficLocationArm"/);
+  assert.ok(!ui.includes('trafficArmRows'));
 });
