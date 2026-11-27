@@ -76,6 +76,16 @@
     }
     return {actuals,mode:'source'};
   }
+  function sourceTargets(rows,week){
+    const staff=document.getElementById('weeklyTargetStaff')?.value||'All';
+    if(staff!=='All')return Object.fromEntries(LOBS.map(lob=>[lob,rows.reduce((sum,row)=>sum+number(row.targets?.[week]?.[lob]),0)]));
+    const stores=new Set(rows.map(row=>row.store));
+    const overrides=DATA.weeklyStoreTargets?.[week]||{};
+    return Object.fromEntries(LOBS.map(lob=>[lob,[...stores].reduce((sum,store)=>{
+      if(overrides[store])return sum+number(overrides[store][lob]);
+      return sum+rows.filter(row=>row.store===store).reduce((subtotal,row)=>subtotal+number(row.targets?.[week]?.[lob]),0);
+    },0)]));
+  }
   function populateStores(){
     const arm=document.getElementById('weeklyTargetArm').value;
     const stores=[...new Set(accessScope().rows.filter(row=>arm==='All'||row.arm===arm).map(row=>row.store))].sort();
@@ -124,7 +134,7 @@
     const rows=selectedRows();
     const week=document.getElementById('weeklyTargetWeek').value;
     const hasActual=weekHasActual(week);
-    const targets=Object.fromEntries(LOBS.map(lob=>[lob,rows.reduce((sum,row)=>sum+number(row.targets?.[week]?.[lob]),0)]));
+    const targets=sourceTargets(rows,week);
     const {actuals,mode:actualMode}=sourceActuals(rows,week);
     const range=rangeFor(week);
     const periodNote=range?(range.isComplete?`${dateLabel(range.start)}–${dateLabel(range.end)}`:`Through ${dateLabel(SALES.asOfDate)}`):'Sunday–Saturday';

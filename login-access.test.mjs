@@ -74,7 +74,7 @@ test('staff-master target names reference an existing target row in the same sto
 
 test('every login scope reconciles current-week LOB actuals across product and commercial sources',()=>{
   for(const account of allAccounts)assert.deepEqual(productActual(accountStores(account)),commercialActual(accountStores(account)),`${account.employeeId} ${account.fullName} has inconsistent current-week totals`);
-  assert.deepEqual(productActual(stores),{iPhone:430,Mac:86,iPad:57,Watch:51,AirPods:93});
+  assert.deepEqual(productActual(stores),JSON.parse(JSON.stringify(sales.sourceCoreByWeek.W9)));
 });
 
 test('every hierarchy store exists in targets, commercial and product actuals',()=>{
@@ -89,7 +89,7 @@ test('every hierarchy store exists in targets, commercial and product actuals',(
 });
 
 test('business navigation is forced visible and stale monthly input grid is hidden',()=>{
-  assert.match(html,/\['dashboard','commercial','product','input','mission','trajectory','gpt','rhythm'\]\.includes\(item\.dataset\.page\)/);
+  assert.match(html,/\['dashboard','commercial','product','traffic','input','mission','trajectory','gpt','rhythm'\]\.includes\(item\.dataset\.page\)/);
   assert.match(html,/const networkWide=\['RM','Admin \/ HO','CEO','Business Head'\]\.includes\(CURRENT_USER\.role\)/);
   assert.match(html,/scopeLabel:enterpriseProfile\?'Enterprise · 69 Stores':e\.scopeLabel/);
   assert.doesNotMatch(html,/setTimeout\(renderAll,100\)/);
