@@ -30,3 +30,4 @@
 .trafficWowTable tr.wowTotal td{border-top:2px solid #9fb8dc}.trafficWowTable tr.wowTotal.second td{border-top:1px dashed #c9d7ea}
 .trafficPill.stIssue{background:#fff4e5;color:#b54708;border:1px solid #fedf89}.trafficTable sup.st,.trafficWowTable sup.st{font-size:8px;font-weight:900;color:#b54708;margin-left:3px;letter-spacing:.02em}
 .trafficTable td.num small{display:block;font-size:10px;font-weight:700;color:#7a8aa0}
+.trafficCard .trafficTableTools.trafficWowTools{grid-template-columns:minmax(140px,1fr) minmax(150px,1fr) minmax(200px,1.6fr) minmax(200px,1.4fr) auto auto;margin-top:12px}.trafficWowTools button{min-height:40px;white-space:nowrap}@media(max-width:1100px){.trafficCard .trafficTableTools.trafficWowTools{grid-template-columns:1fr 1fr}}

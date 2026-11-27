@@ -35,8 +35,8 @@ test('traffic page is wired into public business navigation and applies scoped a
   assert.match(html,/data-page="traffic" href="#traffic"/);
   assert.match(html,/id="trafficIntelligenceRoot"/);
   assert.match(html,/traffic-data\.js\?v=20261127-1/);
-  assert.match(html,/traffic-intelligence\.js\?v=20261127-19/);
-  assert.match(html,/traffic-intelligence\.css\?v=20261127-12/);
+  assert.match(html,/traffic-intelligence\.js\?v=20261127-20/);
+  assert.match(html,/traffic-intelligence\.css\?v=20261127-13/);
   assert.match(ui,/if\(current\.role==='ARM'\)return ROWS\.filter\(row=>row\.arm===current\.user\)/);
   assert.match(ui,/\['Store Manager','Staff'\]\.includes\(current\.role\)/);
   assert.match(ui,/same \$\{days\} days vs/);
@@ -91,4 +91,8 @@ test('zero-footfall days (ST issue) are excluded from both sides of comparisons'
   assert.match(ui,/function pairedCompare/);
   assert.match(ui,/ST issue/);
   assert.ok(!/counter issue/i.test(ui));
+});
+
+test('week-on-week grid has its own ARM, search and trend filters',()=>{
+  for(const id of ['trafficWowArm','trafficWowSearch','trafficWowTrend','trafficWowCount'])assert.match(ui,new RegExp(`id="${id}"`));
 });
