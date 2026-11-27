@@ -95,7 +95,7 @@
     return [...new Set(rows.map(row=>row.store))].map(store=>{const storeRows=rows.filter(row=>row.store===store);const selectedRows=period==='QTD'?storeRows:storeRows.filter(row=>row.week===period);const amount=selectedRows.reduce((sum,row)=>sum+num(row.traffic),0);const dates=new Set(selectedRows.map(row=>row.date));const comparison=compareForWeek(storeRows,currentWeek);const revenue=revenueFor(store,period);const revenueTrend=revenueComparison(store,period);const first=storeRows[0]||{};return {store,arm:first.arm||'—',city:map.get(store)?.city||'Source-only',sourceOnly:Boolean(first.sourceOnly),amount,average:dates.size?amount/dates.size:0,share:total?amount/total*100:0,revenue:revenue.value,revenueAvailable:revenue.available,revenueAverage:revenue.available&&dates.size?revenue.value/dates.size:0,revenueLabel:revenueTrend.label,revenueChange:revenueTrend.change,...comparison};}).sort((a,b)=>b.amount-a.amount);
   }
   function renderLocations(rows){
-    const query=value('trafficSearch').toLowerCase();const filter=value('trafficStatus');
+    const query=String(document.getElementById('trafficSearch')?.value||'').trim().toLowerCase();const filter=value('trafficStatus');
     currentLocationRows=locationRows(rows).filter(row=>(!query||`${row.store} ${row.arm} ${row.city}`.toLowerCase().includes(query))&&(filter==='All'||status(row.change)===filter));
     const locationGrid=document.getElementById('trafficLocationRows')?.closest('.trafficTableWrap');
     if(locationGrid){locationGrid.style.maxHeight='none';locationGrid.style.overflowX='auto';locationGrid.style.overflowY='visible';}
