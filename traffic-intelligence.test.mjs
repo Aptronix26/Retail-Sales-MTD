@@ -35,7 +35,7 @@ test('traffic page is wired into public business navigation and applies scoped a
   assert.match(html,/data-page="traffic" href="#traffic"/);
   assert.match(html,/id="trafficIntelligenceRoot"/);
   assert.match(html,/traffic-data\.js\?v=20261127-1/);
-  assert.match(html,/traffic-intelligence\.js\?v=20261127-18/);
+  assert.match(html,/traffic-intelligence\.js\?v=20261127-19/);
   assert.match(html,/traffic-intelligence\.css\?v=20261127-12/);
   assert.match(ui,/if\(current\.role==='ARM'\)return ROWS\.filter\(row=>row\.arm===current\.user\)/);
   assert.match(ui,/\['Store Manager','Staff'\]\.includes\(current\.role\)/);
@@ -72,19 +72,19 @@ test('location grid has an ARM selector and the ARM performance card is removed'
   assert.ok(!ui.includes('trafficArmRows'));
 });
 
-test('day-wise store revenue reconciles to the published weekly revenue',()=>{
+test('day-wise store revenue comes from the raw invoice statement and is complete',()=>{
   const ctx={window:{}};vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(new URL('./store-daily-revenue.js',import.meta.url),'utf8'),ctx);
-  vm.runInContext(fs.readFileSync(new URL('./sales-achievements.js',import.meta.url),'utf8'),ctx);
-  const daily=ctx.window.STORE_DAILY_REVENUE,weekly=ctx.window.WEEKLY_STAFF_ACHIEVEMENTS.commercialByStoreWeek;
-  assert.ok(daily.rows.length>0);
-  if(daily.version!==ctx.window.WEEKLY_STAFF_ACHIEVEMENTS.asOfDate)return; // stale until tools/build_daily_revenue.mjs is re-run after a sales update
+  const daily=ctx.window.STORE_DAILY_REVENUE;
+  assert.equal(daily.basis,'raw');
   assert.ok(html.includes('store-daily-revenue.js'));
-  for(const week of daily.weeks){
-    const d=daily.rows.filter(r=>r.week===week).reduce((s,r)=>s+r.netRevenue,0);
-    const w=weekly.filter(r=>r.week===week).reduce((s,r)=>s+r.netRevenue,0);
-    assert.ok(Math.abs(d-w)<5,`${week}: daily ${d} vs weekly ${w}`);
-  }
+  assert.deepEqual(JSON.parse(JSON.stringify(daily.missingDates)),[]);
+  assert.ok(daily.coverageStart<=data.periodStart&&daily.coverageEnd>=data.asOfDate,'revenue must cover the traffic period');
+  const storeTotal=daily.rows.reduce((t,r)=>t+r.netRevenue,0),onlineTotal=daily.rows.reduce((t,r)=>t+r.onlineRevenue,0);
+  assert.ok(Math.abs(storeTotal-daily.totals.storeRevenue)<5);assert.ok(Math.abs(onlineTotal-daily.totals.onlineRevenue)<5);
+  const key=v=>v.toLowerCase().replace(/^aptronix\s+/,'').replace(/[^a-z0-9]+/g,'');
+  const revenueStores=new Set(daily.rows.map(r=>key(r.store)));
+  for(const store of new Set(data.rows.map(r=>r.store)))assert.ok(revenueStores.has(key(store)),`no revenue for ${store}`);
 });
 
 test('zero-footfall days (ST issue) are excluded from both sides of comparisons',()=>{

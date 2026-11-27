@@ -35,8 +35,12 @@ This is a static prototype. Its browser-side login and role controls are present
 
 ## Day-wise store revenue (Traffic Intelligence)
 
-`store-daily-revenue.js` holds net revenue per store per day, rebuilt with `node tools/build_daily_revenue.mjs`
-from the daily snapshots of `sales-achievements.js` in git history (day = cumulative store-week revenue
-that morning minus the previous morning; week totals are reconciled to the published weekly figures).
-Re-run it after each daily sales update (needs full git history). Coverage starts on 8 Nov 2026 because
-earlier snapshots carry no store revenue, so same-day revenue comparisons before that date show "—".
+`store-daily-revenue.js` holds verified net revenue per store per day, built directly from the raw Rujul
+Sales Invoice Statement:
+
+    python3 tools/build_store_revenue_from_sis.py Sales_Invoice_Statement.xlsx weekRanges.json
+
+Rules: retail stores only (Ecom-TL and PLFIPL Warehouse excluded); bill line Total incl. GST, sales less
+returns on the bill date; Cancelled and Hold lines and stock Dispatch excluded; "Tax Invoice - Online" bills
+kept out of store revenue and reported as `onlineRevenue`; every invoice line kept (identical lines on one
+bill are separate units). Re-run with each day's statement.
