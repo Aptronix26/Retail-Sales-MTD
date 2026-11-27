@@ -113,6 +113,10 @@
     renderTrend(all);renderDayPattern(all);renderArmTable(all);renderLocations(all);renderInsights(all);
   }
   function refreshFilters(changed){
+    if(['build','navigate'].includes(changed)){
+      ['trafficArm','trafficStore','trafficStatus','trafficLocationStatus'].forEach(id=>{const node=document.getElementById(id);if(node)node.value='All';});
+      const search=document.getElementById('trafficSearch');if(search)search.value='';
+    }
     const rows=accessibleRows();
     if(changed==='arm'){const store=document.getElementById('trafficStore');if(store)store.value='All';}
     setOptions('trafficArm',rows.map(row=>row.arm),'All ARMs');const arm=value('trafficArm');setOptions('trafficStore',rows.filter(row=>selected(row.arm,arm)).map(row=>row.store),'All locations / stores');render();
