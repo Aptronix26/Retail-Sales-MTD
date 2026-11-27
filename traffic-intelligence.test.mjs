@@ -35,8 +35,8 @@ test('traffic page is wired into public business navigation and applies scoped a
   assert.match(html,/data-page="traffic" href="#traffic"/);
   assert.match(html,/id="trafficIntelligenceRoot"/);
   assert.match(html,/traffic-data\.js\?v=20261127-1/);
-  assert.match(html,/traffic-intelligence\.js\?v=20261127-6/);
-  assert.match(html,/traffic-intelligence\.css\?v=20261127-3/);
+  assert.match(html,/traffic-intelligence\.js\?v=20261127-8/);
+  assert.match(html,/traffic-intelligence\.css\?v=20261127-4/);
   assert.match(ui,/if\(current\.role==='ARM'\)return ROWS\.filter\(row=>row\.arm===current\.user\)/);
   assert.match(ui,/\['Store Manager','Staff'\]\.includes\(current\.role\)/);
   assert.match(ui,/same \$\{days\} days vs/);
@@ -49,4 +49,10 @@ test('traffic page is wired into public business navigation and applies scoped a
 
 test('empty location search does not filter the location grid',()=>{
   assert.ok(!ui.includes("value('trafficSearch')"),'search must not fall back to the "All" default');
+});
+
+test('location grid has a total row and its own synced period selector',()=>{
+  assert.match(ui,/trafficTotalRow total/);
+  assert.match(ui,/id="trafficLocationPeriod"/);
+  assert.match(ui,/getElementById\('trafficPeriod'\)\.value=event\.target\.value/);
 });
