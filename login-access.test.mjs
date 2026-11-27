@@ -89,7 +89,7 @@ test('every hierarchy store exists in targets, commercial and product actuals',(
 });
 
 test('business navigation is forced visible and stale monthly input grid is hidden',()=>{
-  assert.match(html,/\['dashboard','commercial','product','input','mission','trajectory','gpt','rhythm'\]\.includes\(item\.dataset\.page\)/);
+  assert.match(html,/\['dashboard','commercial','product','traffic','input','mission','trajectory','gpt','rhythm'\]\.includes\(item\.dataset\.page\)/);
   assert.match(html,/const networkWide=\['RM','Admin \/ HO','CEO','Business Head'\]\.includes\(CURRENT_USER\.role\)/);
   assert.match(html,/scopeLabel:enterpriseProfile\?'Enterprise · 69 Stores':e\.scopeLabel/);
   assert.doesNotMatch(html,/setTimeout\(renderAll,100\)/);

@@ -790,7 +790,7 @@ function navigateToPage(page){
 function initialisePageNavigation(){
  document.querySelectorAll('.navitem[data-page]').forEach(n=>n.addEventListener('click',e=>{e.preventDefault();navigateToPage(n.dataset.page);}));
  let p=(location.hash||'#dashboard').slice(1);
- if(!['dashboard','commercial','product','input','mission','trajectory','gpt','rhythm','admin'].includes(p))p='dashboard';
+ if(!['dashboard','commercial','product','traffic','input','mission','trajectory','gpt','rhythm','admin'].includes(p))p='dashboard';
  navigateToPage(p);
 }
 const oldLoginApp=loginApp;
@@ -1186,6 +1186,7 @@ document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{loadAchievement
 <link href="./interaction-polish.css?v=20261111-3" rel="stylesheet"/>
 <link href="./weekly-targets.css?v=20261111-access1" rel="stylesheet"/>
 <link href="./product-intelligence.css?v=20261110-7" rel="stylesheet"/>
+<link href="./traffic-intelligence.css?v=20261126-1" rel="stylesheet"/>
 <link href="./data-quality-ui.css?v=20261116-dashboard3" rel="stylesheet"/>
 <link href="./report-downloads.css?v=20261116-export1" rel="stylesheet"/>
 <link href="./grid-explorer.css?v=20261121-ux2" rel="stylesheet"/>
@@ -1211,7 +1212,7 @@ document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{loadAchievement
     </div>
 </div>
 </div>
-<div class="app"><aside class="sidebar"><div class="logo">Aptronix <span>IQ</span></div><div class="sublogo">Daily MTD Intelligence<br/>Executive Operating View</div><a class="navitem active" data-page="dashboard" href="#dashboard">🏠 Dashboard</a><a class="navitem" data-page="commercial" href="#commercial">💳 Commercial Levers</a><a class="navitem" data-page="product" href="#product">🔎 Product Intelligence</a><a class="navitem" data-page="input" href="#input">✍️ Target &amp; Achievement</a><a class="navitem" data-page="mission" href="#mission">🎯 Today's Mission</a><a class="navitem" data-page="trajectory" href="#trajectory">📈 Weekly Trajectory</a><a class="navitem" data-page="gpt" href="#gpt">💬 Retail GPT</a><a class="navitem adminNav" data-page="admin" href="#admin">⚙ Admin Console</a><a class="navitem" data-page="rhythm" href="#rhythm">🗓 Operating Rhythm</a><div class="sidebox"><b id="missionStatus">Mission Ready</b><br/><span id="sideScope">RM → ARM → City → Store</span><br/><br/><span>Last updated: <b id="lastUpdated" style="color:#fff;display:inline">--</b></span></div></aside>
+<div class="app"><aside class="sidebar"><div class="logo">Aptronix <span>IQ</span></div><div class="sublogo">Daily MTD Intelligence<br/>Executive Operating View</div><a class="navitem active" data-page="dashboard" href="#dashboard">🏠 Dashboard</a><a class="navitem" data-page="commercial" href="#commercial">💳 Commercial Levers</a><a class="navitem" data-page="product" href="#product">🔎 Product Intelligence</a><a class="navitem" data-page="traffic" href="#traffic">🚶 Traffic Intelligence</a><a class="navitem" data-page="input" href="#input">✍️ Target &amp; Achievement</a><a class="navitem" data-page="mission" href="#mission">🎯 Today's Mission</a><a class="navitem" data-page="trajectory" href="#trajectory">📈 Weekly Trajectory</a><a class="navitem" data-page="gpt" href="#gpt">💬 Retail GPT</a><a class="navitem adminNav" data-page="admin" href="#admin">⚙ Admin Console</a><a class="navitem" data-page="rhythm" href="#rhythm">🗓 Operating Rhythm</a><div class="sidebox"><b id="missionStatus">Mission Ready</b><br/><span id="sideScope">RM → ARM → City → Store</span><br/><br/><span>Last updated: <b id="lastUpdated" style="color:#fff;display:inline">--</b></span></div></aside>
 <main class="main"><div class="topbar"><div class="title"><h1>Daily MTD Intelligence</h1><p>Revenue, run-rate and commercial performance across the selected operating scope.</p></div><div><div class="controls"><div class="field"><label>RM</label><select id="rm" onchange="onRMChange()"></select></div><div class="field"><label>ARM</label><select id="arm" onchange="onARMChange()"></select></div><div class="field"><label>Location / City</label><select id="city" onchange="onCityChange()"></select></div><div class="field"><label>Store</label><select id="store" onchange="if(typeof refreshV23==='function')refreshV23();else calculateOS()"></select></div></div><div style="text-align:right;margin-top:10px"><button onclick="calculateOS()">Refresh Dashboard</button><button class="light" onclick="loadSample()">Reset View</button></div></div></div>
 <div class="roleStrip">
 <div>
@@ -1352,6 +1353,7 @@ document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{loadAchievement
 </div>
 </section>
 <section class="appPage section" id="product"><div id="productIntelligenceRoot"></div></section>
+<section class="appPage section" id="traffic"><div id="trafficIntelligenceRoot"></div></section>
 <section class="appPage card section" id="input">
 <div class="readonlyBanner">🔒 Official data is view-only for Store Manager, ARM and RM. Only Admin / HO can change targets or achievements.</div>
 <h2>✍️ Weekly Target &amp; Achievement Workspace</h2>
@@ -2520,7 +2522,7 @@ const EMBEDDED_W2_ACHIEVEMENT={};
 const EMBEDDED_W1_ACHIEVEMENT={};
 /* v2.4.3.10 — clean executive + scope + trajectory controller */
 (function(){
-  const BUSINESS_PAGES=['dashboard','commercial','product','input','mission','trajectory','gpt','rhythm'];
+  const BUSINESS_PAGES=['dashboard','commercial','product','traffic','input','mission','trajectory','gpt','rhythm'];
 
   const isAll=x=>!x||String(x).startsWith('All ');
 
@@ -3134,7 +3136,7 @@ window.PROD_DATASET_VERSION_2454="oct2026-2026-10-04-v1";
     try{if(typeof window.applyRolePermissions==='function')window.applyRolePermissions();}catch(e){}
     try{if(typeof window.applyCleanExecutiveModeV24310==='function')window.applyCleanExecutiveModeV24310();}catch(e){}
     document.querySelectorAll('.navitem[data-page]').forEach(item=>{
-      if(['dashboard','commercial','product','input','mission','trajectory','gpt','rhythm'].includes(item.dataset.page))item.style.display='flex';
+      if(['dashboard','commercial','product','traffic','input','mission','trajectory','gpt','rhythm'].includes(item.dataset.page))item.style.display='flex';
     });
     try{if(typeof window.navigateToPage==='function')window.navigateToPage('dashboard');}catch(e){}
     identity();
@@ -3203,6 +3205,8 @@ window.PROD_DATASET_VERSION_2454="oct2026-2026-10-04-v1";
 <script src="./weekly-targets-ui.js?v=20261124-targets1"></script>
 <script src="./weekly-operating-model.js?v=20261124-targets1"></script>
 <script src="./product-intelligence.js?v=20261117-lob1"></script>
+<script src="./traffic-data.js?v=20261126-1"></script>
+<script src="./traffic-intelligence.js?v=20261126-1"></script>
 <script src="./data-quality-ui.js?v=20261123-qtd1"></script>
 <script src="./report-downloads.js?v=20261116-export1"></script>
 <script src="./grid-explorer.js?v=20261121-ux2"></script>
