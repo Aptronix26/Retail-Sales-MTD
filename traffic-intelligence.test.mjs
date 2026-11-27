@@ -35,8 +35,8 @@ test('traffic page is wired into public business navigation and applies scoped a
   assert.match(html,/data-page="traffic" href="#traffic"/);
   assert.match(html,/id="trafficIntelligenceRoot"/);
   assert.match(html,/traffic-data\.js\?v=20261127-1/);
-  assert.match(html,/traffic-intelligence\.js\?v=20261127-16/);
-  assert.match(html,/traffic-intelligence\.css\?v=20261127-10/);
+  assert.match(html,/traffic-intelligence\.js\?v=20261127-18/);
+  assert.match(html,/traffic-intelligence\.css\?v=20261127-12/);
   assert.match(ui,/if\(current\.role==='ARM'\)return ROWS\.filter\(row=>row\.arm===current\.user\)/);
   assert.match(ui,/\['Store Manager','Staff'\]\.includes\(current\.role\)/);
   assert.match(ui,/same \$\{days\} days vs/);
@@ -85,4 +85,10 @@ test('day-wise store revenue reconciles to the published weekly revenue',()=>{
     const w=weekly.filter(r=>r.week===week).reduce((s,r)=>s+r.netRevenue,0);
     assert.ok(Math.abs(d-w)<5,`${week}: daily ${d} vs weekly ${w}`);
   }
+});
+
+test('zero-footfall days (ST issue) are excluded from both sides of comparisons',()=>{
+  assert.match(ui,/function pairedCompare/);
+  assert.match(ui,/ST issue/);
+  assert.ok(!/counter issue/i.test(ui));
 });
