@@ -11,3 +11,4 @@
 @media(max-width:1200px){.trafficKpis{grid-template-columns:repeat(3,1fr)}.trafficWeekCards{grid-template-columns:repeat(5,minmax(110px,1fr))}}
 @media(max-width:900px){.trafficHeader{display:grid}.trafficFilters{grid-template-columns:repeat(2,1fr)}.trafficGrid{grid-template-columns:1fr}.trafficKpis{grid-template-columns:repeat(2,1fr)}.trafficInsights{grid-template-columns:1fr}.trafficScope{align-items:flex-start;flex-direction:column}}
 @media(max-width:560px){.trafficFilters,.trafficKpis{grid-template-columns:1fr}.trafficHeader h2{font-size:23px}.trafficWeekCards{grid-template-columns:repeat(3,minmax(105px,1fr))}.trafficCard{padding:14px}}
+.trafficTableWrap:has(#trafficLocationRows){max-height:none;overflow-x:auto}
