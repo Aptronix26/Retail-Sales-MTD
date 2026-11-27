@@ -57,7 +57,7 @@
     const countText=`${visible} of ${dataRows.length} rows${active?' · filtered':''}`;if(count.textContent!==countText)count.textContent=countText;count.classList.toggle('filtering',active);
   }
   function enhance(table,index){
-    if(states.has(table)||!table.tBodies?.length)return;
+    if(states.has(table)||!table.tBodies?.length||table.dataset.noExplorer)return;
     const headers=headersFor(table);if(!headers.length)return;
     const bar=document.createElement('div');bar.className='gridExplorerBar';bar.dataset.gridExplorer=String(index);bar.setAttribute('aria-label','Grid filters');
     bar.innerHTML=`<label class="gridExplorerField"><span>Search this grid</span><input type="search" placeholder="Type to find rows" aria-label="Search this grid"></label><label class="gridExplorerField"><span>Data point / column</span><select aria-label="Select grid column">${option('-1','All columns')}${headers.map((header,i)=>option(i,header)).join('')}</select></label><label class="gridExplorerField"><span>Value</span><select aria-label="Select grid value"><option value="">All values</option></select></label><label class="gridExplorerField"><span>Achievement status</span><select aria-label="Select achievement status"><option value="all">All rows</option><option value="zero">Zero achievement</option><option value="nonzero">Non-zero achievement</option></select></label><button type="button" class="gridExplorerReset">Reset</button><div class="gridExplorerCount" aria-live="polite"></div>`;
