@@ -35,8 +35,8 @@ test('traffic page is wired into public business navigation and applies scoped a
   assert.match(html,/data-page="traffic" href="#traffic"/);
   assert.match(html,/id="trafficIntelligenceRoot"/);
   assert.match(html,/traffic-data\.js\?v=20261127-1/);
-  assert.match(html,/traffic-intelligence\.js\?v=20261127-15/);
-  assert.match(html,/traffic-intelligence\.css\?v=20261127-9/);
+  assert.match(html,/traffic-intelligence\.js\?v=20261127-16/);
+  assert.match(html,/traffic-intelligence\.css\?v=20261127-10/);
   assert.match(ui,/if\(current\.role==='ARM'\)return ROWS\.filter\(row=>row\.arm===current\.user\)/);
   assert.match(ui,/\['Store Manager','Staff'\]\.includes\(current\.role\)/);
   assert.match(ui,/same \$\{days\} days vs/);
@@ -70,4 +70,19 @@ test('separate week-on-week trend grid for footfall and revenue',()=>{
 test('location grid has an ARM selector and the ARM performance card is removed',()=>{
   assert.match(ui,/id="trafficLocationArm"/);
   assert.ok(!ui.includes('trafficArmRows'));
+});
+
+test('day-wise store revenue reconciles to the published weekly revenue',()=>{
+  const ctx={window:{}};vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(new URL('./store-daily-revenue.js',import.meta.url),'utf8'),ctx);
+  vm.runInContext(fs.readFileSync(new URL('./sales-achievements.js',import.meta.url),'utf8'),ctx);
+  const daily=ctx.window.STORE_DAILY_REVENUE,weekly=ctx.window.WEEKLY_STAFF_ACHIEVEMENTS.commercialByStoreWeek;
+  assert.ok(daily.rows.length>0);
+  if(daily.version!==ctx.window.WEEKLY_STAFF_ACHIEVEMENTS.asOfDate)return; // stale until tools/build_daily_revenue.mjs is re-run after a sales update
+  assert.ok(html.includes('store-daily-revenue.js'));
+  for(const week of daily.weeks){
+    const d=daily.rows.filter(r=>r.week===week).reduce((s,r)=>s+r.netRevenue,0);
+    const w=weekly.filter(r=>r.week===week).reduce((s,r)=>s+r.netRevenue,0);
+    assert.ok(Math.abs(d-w)<5,`${week}: daily ${d} vs weekly ${w}`);
+  }
 });

@@ -32,3 +32,11 @@ This is a static prototype. Its browser-side login and role controls are present
 - Added a filter-responsive Commercial Levers page for trade-in, loan, protection and Microsoft performance.
 - Added all-store and like-for-like October revenue comparison using same-date October 2025 values.
 - Updated the approved 69-store production snapshot through 4 October 2026 with October targets and same-date October 2025 comparison.
+
+## Day-wise store revenue (Traffic Intelligence)
+
+`store-daily-revenue.js` holds net revenue per store per day, rebuilt with `node tools/build_daily_revenue.mjs`
+from the daily snapshots of `sales-achievements.js` in git history (day = cumulative store-week revenue
+that morning minus the previous morning; week totals are reconciled to the published weekly figures).
+Re-run it after each daily sales update (needs full git history). Coverage starts on 8 Nov 2026 because
+earlier snapshots carry no store revenue, so same-day revenue comparisons before that date show "—".
