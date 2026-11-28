@@ -46,7 +46,10 @@ def main(path, weeks_path=None):
         total = num(r.get("Total")); key = (day, b); dates.add(day); branches.add(b)
         if (r.get("Voucher Type") or "").strip() == ONLINE: online[key] += total; audit["online_lines"] += 1
         else: store[key] += total; audit["store_lines"] += 1
-    week_of = lambda d: next((w for w, x in (weeks or {}).items() if x["start"] <= d <= x["end"]), None)
+    q_start = datetime.date.fromisoformat(min(dates))  # quarter starts on a Sunday (Apple fiscal weeks)
+    def week_of(d):
+        hit = next((w for w, x in (weeks or {}).items() if x["start"] <= d <= x["end"]), None)
+        return hit or f"W{(datetime.date.fromisoformat(d) - q_start).days // 7 + 1}"
     keys = sorted(set(store) | set(online))
     out_rows = [{"date": d, "week": week_of(d), "store": b, "netRevenue": round(store.get((d, b), 0.0), 2), "onlineRevenue": round(online.get((d, b), 0.0), 2)} for d, b in keys]
     start, end = min(dates), max(dates)
